@@ -8,16 +8,21 @@
 
 import Foundation
 
-protocol RESTResource {
+public protocol RESTResource {
 
     var path: String { get }
 
     var queryParameters: [URLQueryItem] { get }
 }
 
-struct RESTReadResource<Model: Decodable>: RESTResource {
+public struct RESTReadResource<Model: Decodable>: RESTResource {
 
-    let path: String
+    public init(path: String, queryParameters: [URLQueryItem]) {
+        self.path = path
+        self.queryParameters = queryParameters
+    }
 
-    let queryParameters: [URLQueryItem]
+    public let path: String
+
+    public let queryParameters: [URLQueryItem]
 }

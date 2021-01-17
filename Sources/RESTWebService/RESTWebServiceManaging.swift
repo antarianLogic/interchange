@@ -8,22 +8,22 @@
 
 import Foundation
 
-protocol RESTWebServiceManaging {
+public protocol RESTWebServiceManaging {
 
     init(baseURL: URL, session: URLSession)
 
-    func get<Model: Decodable>(route: RESTReadResource<Model>,
+    func get<Model: Decodable>(resource: RESTReadResource<Model>,
                                completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void)
 }
 
-enum RESTWebServiceError: Error {
+public enum RESTWebServiceError: Error {
 
     case invalidBaseURL(String)
     case insufficientURLComponents(String)
     case urlSessionDataTaskError(Error)
     case jsonDecodingError(Error)
 
-    var presentableDescription: String {
+    public var presentableDescription: String {
         switch self {
         case .invalidBaseURL(let urlString):
             return "Invalid base URL: \(urlString)"

@@ -8,19 +8,19 @@
 
 import Foundation
 
-class RESTWebServiceManager : RESTWebServiceManaging {
+public class RESTWebServiceManager : RESTWebServiceManaging {
 
     let baseURL: URL
     let session: URLSession
 
-    required init(baseURL: URL,
-                  session: URLSession = URLSession(configuration: .default)) {
+    public required init(baseURL: URL,
+                         session: URLSession = URLSession(configuration: .default)) {
         self.baseURL = baseURL
         self.session = session
     }
 
-    func get<Model: Decodable>(route: RESTReadResource<Model>,
-                               completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) {
+    public func get<Model: Decodable>(resource: RESTReadResource<Model>,
+                                      completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) {
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
             let error = RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
@@ -28,9 +28,9 @@ class RESTWebServiceManager : RESTWebServiceManaging {
             return
         }
 
-        validComponents.path = route.path
-        if !route.queryParameters.isEmpty {
-            validComponents.queryItems = route.queryParameters
+        validComponents.path = resource.path
+        if !resource.queryParameters.isEmpty {
+            validComponents.queryItems = resource.queryParameters
         }
         guard let url = validComponents.url else {
             let error = RESTWebServiceError.insufficientURLComponents(validComponents.description)
