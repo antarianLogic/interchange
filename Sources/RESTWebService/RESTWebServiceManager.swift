@@ -20,12 +20,12 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
     }
 
     public func get<Model: Decodable>(resource: RESTReadResource<Model>,
-                                      completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) {
+                                      completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest? {
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
             let error = RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
             completionHandler(.failure(error))
-            return
+            return nil
         }
 
         validComponents.path = resource.path
@@ -35,10 +35,17 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
         guard let url = validComponents.url else {
             let error = RESTWebServiceError.insufficientURLComponents(validComponents.description)
             completionHandler(.failure(error))
-            return
+            return nil
         }
 
-        let task = session.dataTask(with: url) { (data, response, error) in
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        for header in resource.headers {
+            request.setValue(header.value, forHTTPHeaderField: header.key)
+        }
+
+        let task = session.dataTask(with: request) { data, response, error in
             if let validError = error {
                 let dataTaskError = RESTWebServiceError.urlSessionDataTaskError(validError)
                 DispatchQueue.main.async {
@@ -60,5 +67,7 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
             }
         }
         task.resume()
+
+        return request
     }
 }

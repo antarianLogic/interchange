@@ -13,7 +13,7 @@ public protocol RESTWebServiceManaging {
     init(baseURL: URL, session: URLSession)
 
     func get<Model: Decodable>(resource: RESTReadResource<Model>,
-                               completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void)
+                               completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest?
 }
 
 public enum RESTWebServiceError: Error {

@@ -27,6 +27,7 @@ enum FooBarResources {
     static func getBar(inputs: [String]) -> RESTReadResource<BarModel> {
         let inputsString = inputs.joined(separator: ",")
         return RESTReadResource(path: "/bar",
+                                headers: ["User-Agent": "Foo/1.0.0 (bar@example.com)"],
                                 queryParameters: [URLQueryItem(name: "inputs", value: inputsString)])
     }
 }
@@ -61,10 +62,13 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let exp = expectation(description: "testGetFoo")
         let resource = FooBarResources.getFoo(input: "123")
         var model: FooModel?
-        sut.get(route: resource) { result in
+        let request = sut.get(resource: resource) { result in
             model = try? result.get()
             exp.fulfill()
         }
+        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/foo/123")
+        XCTAssertEqual(request?.httpMethod, "GET")
+        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
         waitForExpectations(timeout: 1) { (error) in
             XCTAssertNil(error)
         }
@@ -75,10 +79,14 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let exp = expectation(description: "testGetBar")
         let resource = FooBarResources.getBar(inputs: ["234","345"])
         var model: BarModel?
-        sut.get(route: resource) { result in
+        let request = sut.get(resource: resource) { result in
             model = try? result.get()
             exp.fulfill()
         }
+        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/bar?inputs=234,345")
+        XCTAssertEqual(request?.httpMethod, "GET")
+        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json",
+                                                      "User-Agent": "Foo/1.0.0 (bar@example.com)"])
         waitForExpectations(timeout: 1) { (error) in
             XCTAssertNil(error)
         }

@@ -12,17 +12,24 @@ public protocol RESTResource {
 
     var path: String { get }
 
+    var headers: [String : String] { get }
+
     var queryParameters: [URLQueryItem] { get }
 }
 
 public struct RESTReadResource<Model: Decodable>: RESTResource {
 
-    public init(path: String, queryParameters: [URLQueryItem]) {
+    public init(path: String,
+                headers: [String : String] = [:],
+                queryParameters: [URLQueryItem] = []) {
         self.path = path
+        self.headers = headers
         self.queryParameters = queryParameters
     }
 
     public let path: String
+
+    public let headers: [String : String]
 
     public let queryParameters: [URLQueryItem]
 }
