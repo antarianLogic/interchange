@@ -34,39 +34,46 @@ enum FooBarResources {
 
 final class RESTWebServiceManagerTests: XCTestCase {
 
-    var sut: RESTWebServiceManager!
-
-    override func setUpWithError() throws {
-        guard let baseURL = URL(string: "https://example.com"),
-              let fooURL = URL(string: "https://example.com/foo/123"),
+    override class func setUp() {
+        guard let fooURL = URL(string: "https://example.com/baz/foo/123"),
               let barURL = URL(string: "https://example.com/bar?inputs=234,345") else { fatalError("Invalid URL!") }
 
         URLProtocolStub.testURLs = [fooURL: Data("{ \"name\": \"foo\" }".utf8),
                                     barURL: Data("{ \"count\": 2 }".utf8)]
+    }
+
+    var sut: RESTWebServiceManager!
+
+    func createSUT(baseURLString: String) throws {
+        guard let baseURL = URL(string: baseURLString) else { throw URLError(.badURL) }
+
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [URLProtocolStub.self]
         let session = URLSession(configuration: config)
-
         sut = RESTWebServiceManager(baseURL: baseURL, session: session)
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() {
         sut = nil
     }
 
     func testInit() throws {
+        try createSUT(baseURLString: "https://example.com")
+
         XCTAssertEqual(sut.baseURL.absoluteString, "https://example.com")
     }
 
-    func testGetFoo() throws {
-        let exp = expectation(description: "testGetFoo")
+    func testGetWithPathParams() throws {
+        try createSUT(baseURLString: "https://example.com/baz")
+
+        let exp = expectation(description: "testGetWithPathParams")
         let resource = FooBarResources.getFoo(input: "123")
         var model: FooModel?
         let request = sut.get(resource: resource) { result in
             model = try? result.get()
             exp.fulfill()
         }
-        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/foo/123")
+        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/baz/foo/123")
         XCTAssertEqual(request?.httpMethod, "GET")
         XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
         waitForExpectations(timeout: 1) { (error) in
@@ -75,8 +82,10 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertEqual(model?.name, "foo")
     }
 
-    func testGetBar() throws {
-        let exp = expectation(description: "testGetBar")
+    func testGetWithQueryParams() throws {
+        try createSUT(baseURLString: "https://example.com")
+
+        let exp = expectation(description: "testGetWithQueryParams")
         let resource = FooBarResources.getBar(inputs: ["234","345"])
         var model: BarModel?
         let request = sut.get(resource: resource) { result in
@@ -95,7 +104,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
 
     static var allTests = [
         ("testInit", testInit),
-        ("testGetFoo", testGetFoo),
-        ("testGetBar", testGetBar)
+        ("testGetWithPathParams", testGetWithPathParams),
+        ("testGetWithQueryParams", testGetWithQueryParams)
     ]
 }

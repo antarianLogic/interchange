@@ -24,17 +24,21 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
             let error = RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
-            completionHandler(.failure(error))
+            DispatchQueue.main.async {
+                completionHandler(.failure(error))
+            }
             return nil
         }
 
-        validComponents.path = resource.path
+        validComponents.path = validComponents.path.appending(resource.path)
         if !resource.queryParameters.isEmpty {
             validComponents.queryItems = resource.queryParameters
         }
         guard let url = validComponents.url else {
             let error = RESTWebServiceError.insufficientURLComponents(validComponents.description)
-            completionHandler(.failure(error))
+            DispatchQueue.main.async {
+                completionHandler(.failure(error))
+            }
             return nil
         }
 
