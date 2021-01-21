@@ -57,9 +57,12 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
                 }
             }
             else if let httpResponse = response as? HTTPURLResponse,
-                    httpResponse.statusCode < 200,
-                    httpResponse.statusCode > 203 {
-                let httpError = RESTWebServiceError.httpError(httpResponse.statusCode)
+                    httpResponse.statusCode < 200 || httpResponse.statusCode > 203 {
+                var errorString = ""
+                if let validErrorData = data {
+                    errorString = String(data: validErrorData, encoding: .utf8) ?? ""
+                }
+                let httpError = RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
                 DispatchQueue.main.async {
                     completionHandler(.failure(httpError))
                 }

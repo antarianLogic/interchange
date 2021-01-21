@@ -15,28 +15,3 @@ public protocol RESTWebServiceManaging {
     func get<Model: Decodable>(resource: RESTReadResource<Model>,
                                completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest?
 }
-
-public enum RESTWebServiceError: Error {
-
-    case invalidBaseURL(String)
-    case insufficientURLComponents(String)
-    case urlSessionDataTaskError(Error)
-    case httpError(Int)
-    case jsonDecodingError(Error)
-
-    public var presentableDescription: String {
-        switch self {
-        case .invalidBaseURL(let urlString):
-            return "Invalid base URL: \(urlString)"
-        case .insufficientURLComponents(let componentsString):
-            return "Insufficient URL components: \(componentsString)"
-        case .urlSessionDataTaskError(let error):
-            return error.localizedDescription
-        case .httpError(let statusCode):
-            return "Recieved HTTP error with status code: \(statusCode)"
-        case .jsonDecodingError(let error):
-            return error.localizedDescription
-        }
-    }
-
-}
