@@ -21,6 +21,7 @@ public enum RESTWebServiceError: Error {
     case invalidBaseURL(String)
     case insufficientURLComponents(String)
     case urlSessionDataTaskError(Error)
+    case httpError(Int)
     case jsonDecodingError(Error)
 
     public var presentableDescription: String {
@@ -31,6 +32,8 @@ public enum RESTWebServiceError: Error {
             return "Insufficient URL components: \(componentsString)"
         case .urlSessionDataTaskError(let error):
             return error.localizedDescription
+        case .httpError(let statusCode):
+            return "Recieved HTTP error with status code: \(statusCode)"
         case .jsonDecodingError(let error):
             return error.localizedDescription
         }

@@ -56,6 +56,14 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
                     completionHandler(.failure(dataTaskError))
                 }
             }
+            else if let httpResponse = response as? HTTPURLResponse,
+                    httpResponse.statusCode < 200,
+                    httpResponse.statusCode > 203 {
+                let httpError = RESTWebServiceError.httpError(httpResponse.statusCode)
+                DispatchQueue.main.async {
+                    completionHandler(.failure(httpError))
+                }
+            }
             else if let validData = data {
                 do {
                     let model:Model = try JSONDecoder().decode(Model.self, from: validData)

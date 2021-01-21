@@ -30,6 +30,9 @@ class URLProtocolStub: URLProtocol {
             if let data = Self.testURLs[url] {
                 // …load it immediately.
                 self.client?.urlProtocol(self, didLoad: data)
+            } else {
+                guard let httpResponse = HTTPURLResponse(url: url, statusCode: 400, httpVersion: nil, headerFields: nil) else { return }
+                self.client?.urlProtocol(self, didReceive: httpResponse, cacheStoragePolicy: .notAllowed)
             }
         }
 

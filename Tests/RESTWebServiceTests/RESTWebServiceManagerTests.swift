@@ -102,6 +102,27 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertEqual(model?.count, 2)
     }
 
+    func testHTTPError() throws {
+        try createSUT(baseURLString: "https://example.com/invalid")
+
+        let exp = expectation(description: "testHTTPError")
+        let resource = FooBarResources.getFoo(input: "123")
+        var error: RESTWebServiceError?
+        let request = sut.get(resource: resource) { result in
+            if case let .failure(resultError) = result {
+                error = resultError
+            }
+            exp.fulfill()
+        }
+        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/invalid/foo/123")
+        XCTAssertEqual(request?.httpMethod, "GET")
+        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
+        waitForExpectations(timeout: 1) { (expError) in
+            XCTAssertNil(expError)
+        }
+        XCTAssertNotNil(error)
+    }
+
     static var allTests = [
         ("testInit", testInit),
         ("testGetWithPathParams", testGetWithPathParams),
