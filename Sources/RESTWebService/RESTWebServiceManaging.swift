@@ -12,6 +12,6 @@ public protocol RESTWebServiceManaging {
 
     init(baseURL: URL, session: URLSession)
 
-    func get<Model: Decodable>(resource: RESTReadResource<Model>,
+    func get<Model: Decodable>(resource: RESTResource<Model>,
                                completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest?
 }

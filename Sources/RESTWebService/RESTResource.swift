@@ -8,23 +8,16 @@
 
 import Foundation
 
-public protocol RESTResource {
-
-    var path: String { get }
-
-    var headers: [String : String] { get }
-
-    var queryParameters: [URLQueryItem] { get }
-}
-
-public struct RESTReadResource<Model: Decodable>: RESTResource {
+public struct RESTResource<Model: Codable> {
 
     public init(path: String,
                 headers: [String : String] = [:],
-                queryParameters: [URLQueryItem] = []) {
+                queryParameters: [URLQueryItem] = [],
+                model: Model? = nil) {
         self.path = path
         self.headers = headers
         self.queryParameters = queryParameters
+        self.model = model
     }
 
     public let path: String
@@ -32,4 +25,6 @@ public struct RESTReadResource<Model: Decodable>: RESTResource {
     public let headers: [String : String]
 
     public let queryParameters: [URLQueryItem]
+
+    public let model: Model?
 }

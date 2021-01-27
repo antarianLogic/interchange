@@ -9,26 +9,26 @@
 import XCTest
 @testable import RESTWebService
 
-struct FooModel: Decodable {
+struct FooModel: Codable {
     let name: String
 }
 
-struct BarModel: Decodable {
+struct BarModel: Codable {
     let count: Int
 }
 
 enum FooBarResources {
 
-    static func getFoo(input: String) -> RESTReadResource<FooModel> {
-        return RESTReadResource(path: "/foo/\(input)",
-                                queryParameters: [])
+    static func getFoo(input: String) -> RESTResource<FooModel> {
+        return RESTResource(path: "/foo/\(input)",
+                            queryParameters: [])
     }
 
-    static func getBar(inputs: [String]) -> RESTReadResource<BarModel> {
+    static func getBar(inputs: [String]) -> RESTResource<BarModel> {
         let inputsString = inputs.joined(separator: ",")
-        return RESTReadResource(path: "/bar",
-                                headers: ["User-Agent": "Foo/1.0.0 (bar@example.com)"],
-                                queryParameters: [URLQueryItem(name: "inputs", value: inputsString)])
+        return RESTResource(path: "/bar",
+                            headers: ["User-Agent": "Foo/1.0.0 (bar@example.com)"],
+                            queryParameters: [URLQueryItem(name: "inputs", value: inputsString)])
     }
 }
 
