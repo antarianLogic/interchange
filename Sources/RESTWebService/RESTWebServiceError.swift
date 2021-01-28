@@ -1,8 +1,9 @@
 //
-//  File.swift
-//  
+//  RESTWebServiceError.swift
+//  RESTWebService
 //
-//  Created by Antares on 1/21/21.
+//  Created by Carl Sheppard on 1/21/21.
+//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
 import Foundation

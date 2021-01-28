@@ -2,7 +2,7 @@
 //  RESTWebServiceManagerTests.swift
 //  RESTWebServiceTests
 //
-//  Created by antarianLogic on 1/15/21.
+//  Created by Carl Sheppard on 1/15/21.
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
