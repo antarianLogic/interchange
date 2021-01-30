@@ -9,9 +9,7 @@
 import Foundation
 
 public protocol RESTWebServiceManaging {
-
-    init(baseURL: URL, session: URLSession)
-
-    func get<Model: Decodable>(resource: RESTResource<Model>,
-                               completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest?
+    
+    func get<Model>(resource: RESTResource<Model>,
+                    completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest?
 }

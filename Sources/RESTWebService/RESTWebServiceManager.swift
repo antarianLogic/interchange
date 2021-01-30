@@ -19,8 +19,8 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
         self.session = session
     }
 
-    public func get<Model: Decodable>(resource: RESTResource<Model>,
-                                      completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest? {
+    public func get<Model>(resource: RESTResource<Model>,
+                           completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest? {
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
             let error = RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
