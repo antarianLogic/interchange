@@ -70,6 +70,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let resource = FooBarResources.getFoo(input: "123")
         var model: FooModel?
         let request = sut.get(resource: resource) { result in
+            XCTAssertTrue(Thread.isMainThread)
             model = try? result.get()
             exp.fulfill()
         }
@@ -88,7 +89,8 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let exp = expectation(description: "testGetWithQueryParams")
         let resource = FooBarResources.getBar(inputs: ["234","345"])
         var model: BarModel?
-        let request = sut.get(resource: resource) { result in
+        let request = sut.get(resource: resource, successOnMainQueue: false) { result in
+            XCTAssertFalse(Thread.isMainThread)
             model = try? result.get()
             exp.fulfill()
         }

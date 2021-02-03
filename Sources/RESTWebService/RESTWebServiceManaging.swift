@@ -9,7 +9,18 @@
 import Foundation
 
 public protocol RESTWebServiceManaging {
-    
+
+    @discardableResult
     func get<Model>(resource: RESTResource<Model>,
-                    completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest?
+                    successOnMainQueue: Bool,
+                    onCompletion: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest?
+}
+
+extension RESTWebServiceManaging {
+
+    @discardableResult
+    func get<Model>(resource: RESTResource<Model>,
+                    onCompletion: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest? {
+        return get(resource: resource, successOnMainQueue: true, onCompletion: onCompletion)
+    }
 }

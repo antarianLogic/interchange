@@ -19,13 +19,15 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
         self.session = session
     }
 
+    @discardableResult
     public func get<Model>(resource: RESTResource<Model>,
-                           completionHandler: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest? {
+                           successOnMainQueue: Bool = true,
+                           onCompletion: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest? {
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
             let error = RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
             DispatchQueue.main.async {
-                completionHandler(.failure(error))
+                onCompletion(.failure(error))
             }
             return nil
         }
@@ -37,7 +39,7 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
         guard let url = validComponents.url else {
             let error = RESTWebServiceError.insufficientURLComponents(validComponents.description)
             DispatchQueue.main.async {
-                completionHandler(.failure(error))
+                onCompletion(.failure(error))
             }
             return nil
         }
@@ -53,7 +55,7 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
             if let validError = error {
                 let dataTaskError = RESTWebServiceError.urlSessionDataTaskError(validError)
                 DispatchQueue.main.async {
-                    completionHandler(.failure(dataTaskError))
+                    onCompletion(.failure(dataTaskError))
                 }
             }
             else if let httpResponse = response as? HTTPURLResponse,
@@ -64,19 +66,23 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
                 }
                 let httpError = RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
                 DispatchQueue.main.async {
-                    completionHandler(.failure(httpError))
+                    onCompletion(.failure(httpError))
                 }
             }
             else if let validData = data {
                 do {
                     let model:Model = try JSONDecoder().decode(Model.self, from: validData)
-                    DispatchQueue.main.async {
-                        completionHandler(.success(model))
+                    if successOnMainQueue {
+                        DispatchQueue.main.async {
+                            onCompletion(.success(model))
+                        }
+                    } else {
+                        onCompletion(.success(model))
                     }
                 } catch {
                     let decodingError = RESTWebServiceError.jsonDecodingError(error)
                     DispatchQueue.main.async {
-                        completionHandler(.failure(decodingError))
+                        onCompletion(.failure(decodingError))
                     }
                 }
             }
