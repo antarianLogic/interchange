@@ -16,7 +16,7 @@ public protocol RESTWebServiceManaging {
                     onCompletion: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest?
 }
 
-extension RESTWebServiceManaging {
+public extension RESTWebServiceManaging {
 
     @discardableResult
     func get<Model>(resource: RESTResource<Model>,
