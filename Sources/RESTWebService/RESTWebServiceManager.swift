@@ -33,9 +33,15 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
         }
 
         validComponents.path = validComponents.path.appending(resource.path)
-        if !resource.queryParameters.isEmpty {
-            validComponents.queryItems = resource.queryParameters
+
+        var queryItems = resource.queryParameters
+        if let offsetQueryItem = resource.offsetQueryItem {
+            queryItems.append(offsetQueryItem)
         }
+        if !queryItems.isEmpty {
+            validComponents.queryItems = queryItems
+        }
+
         guard let url = validComponents.url else {
             let error = RESTWebServiceError.insufficientURLComponents(validComponents.description)
             DispatchQueue.main.async {

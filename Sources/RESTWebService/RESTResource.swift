@@ -13,11 +13,13 @@ public struct RESTResource<Model: Codable> {
     public init(path: String,
                 headers: [String : String] = [:],
                 queryParameters: [URLQueryItem] = [],
-                model: Model? = nil) {
+                model: Model? = nil,
+                offsetQueryItem: URLQueryItem? = nil) {
         self.path = path
         self.headers = headers
         self.queryParameters = queryParameters
         self.model = model
+        self.offsetQueryItem = offsetQueryItem
     }
 
     public let path: String
@@ -27,4 +29,6 @@ public struct RESTResource<Model: Codable> {
     public let queryParameters: [URLQueryItem]
 
     public let model: Model?
+
+    public let offsetQueryItem: URLQueryItem?
 }
