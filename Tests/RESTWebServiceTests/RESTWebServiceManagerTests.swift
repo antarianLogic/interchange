@@ -18,7 +18,15 @@ struct BarModel: Codable {
 }
 
 struct FoosModel: Codable {
+    let count: UInt
+    let offset: UInt
     let foos: [FooModel]
+}
+
+extension FoosModel: Pageable {
+    var totalCount: UInt { return count }
+    var currentOffset: UInt { return offset }
+    var submodels: [FooModel] { return foos }
 }
 
 enum FooBarResources {
@@ -37,7 +45,12 @@ enum FooBarResources {
 
     static func getFoos() -> RESTResource<FoosModel> {
         return RESTResource(path: "/foos",
-                            offsetQueryItem: URLQueryItem(name: "offset", value: "100"))
+                            offsetQueryItem: URLQueryItem(name: "offset", value: "0"))
+    }
+
+    static func getFoos2() -> RESTResource<FoosModel> {
+        return RESTResource(path: "/foos",
+                            offsetQueryItem: URLQueryItem(name: "offset", value: "2"))
     }
 }
 
@@ -46,11 +59,13 @@ final class RESTWebServiceManagerTests: XCTestCase {
     override class func setUp() {
         guard let fooURL = URL(string: "https://example.com/baz/foo/123"),
               let barURL = URL(string: "https://example.com/bar?inputs=234,345"),
-              let foosURL = URL(string: "https://example.com/foos?offset=100") else { fatalError("Invalid URL!") }
+              let foosURL0 = URL(string: "https://example.com/foos?offset=0"),
+              let foosURL2 = URL(string: "https://example.com/foos?offset=2") else { fatalError("Invalid URL!") }
 
         URLProtocolStub.testURLs = [fooURL: Data("{ \"name\": \"foo\" }".utf8),
                                     barURL: Data("{ }".utf8),
-                                    foosURL: Data("{ \"foos\": [ { \"name\": \"foo\" } ] }".utf8)]
+                                    foosURL0: Data("{ \"count\": 3, \"offset\": 0, \"foos\": [ { \"name\": \"foo1\" }, { \"name\": \"foo2\" } ] }".utf8),
+                                    foosURL2: Data("{ \"count\": 3, \"offset\": 2, \"foos\": [ { \"name\": \"foo3\" } ] }".utf8)]
     }
 
     var sut: RESTWebServiceManager!
@@ -80,7 +95,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let exp = expectation(description: "testGetWithPathParams")
         let resource = FooBarResources.getFoo(input: "123")
         var model: FooModel!
-        let request = sut.get(resource: resource) { result in
+        let request = sut.get(with: resource) { result in
             XCTAssertTrue(Thread.isMainThread)
             model = try? result.get()
             exp.fulfill()
@@ -100,7 +115,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let exp = expectation(description: "testGetWithQueryParams")
         let resource = FooBarResources.getBar(inputs: ["234","345"])
         var model: BarModel!
-        let request = sut.get(resource: resource) { result in
+        let request = sut.get(with: resource) { result in
             XCTAssertTrue(Thread.isMainThread)
             model = try? result.get()
             exp.fulfill()
@@ -115,27 +130,52 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertNil(model.count)
     }
 
-    func testGetWithOffset() throws {
+    func testGetMultipage() throws {
         try createSUT(baseURLString: "https://example.com")
 
-        let exp = expectation(description: "testGetWithOffset")
+        let exp = expectation(description: "testGetMultipage")
         let resource = FooBarResources.getFoos()
-        var model: FoosModel!
-        let request = sut.get(resource: resource, successOnMainQueue: false) { result in
-            XCTAssertFalse(Thread.isMainThread)
-            model = try? result.get()
-            DispatchQueue.main.async {
-                exp.fulfill()
-            }
+        var models: [FooModel]!
+        let request = sut.getMultipage(with: resource) { result in
+            XCTAssertTrue(Thread.isMainThread)
+            models = try? result.get()
+            exp.fulfill()
         }
-        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/foos?offset=100")
+        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/foos?offset=0")
         XCTAssertEqual(request?.httpMethod, "GET")
         XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
         waitForExpectations(timeout: 1) { (error) in
             XCTAssertNil(error)
         }
-        XCTAssertEqual(model.foos.count, 1)
-        XCTAssertEqual(model.foos.first?.name, "foo")
+        XCTAssertEqual(models.count, 3)
+        XCTAssertEqual(models.first?.name, "foo1")
+        XCTAssertEqual(models.last?.name, "foo3")
+    }
+
+    func testGetRemainingPages() throws {
+        try createSUT(baseURLString: "https://example.com")
+
+        let exp = expectation(description: "testGetRemainingPages")
+        let resource = FooBarResources.getFoos2()
+        let existingSubmodels = [FooModel(name: "foo1"), FooModel(name: "foo2")]
+        var models: [FooModel]!
+        var request: URLRequest?
+        request = sut.getRemainingPages(with: resource, at: 2, existingSubmodels: existingSubmodels) { result in
+            XCTAssertFalse(Thread.isMainThread)
+            models = try? result.get()
+            DispatchQueue.main.async {
+                exp.fulfill()
+            }
+        }
+        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/foos?offset=2")
+        XCTAssertEqual(request?.httpMethod, "GET")
+        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
+        waitForExpectations(timeout: 1) { (error) in
+            XCTAssertNil(error)
+        }
+        XCTAssertEqual(models.count, 3)
+        XCTAssertEqual(models.first?.name, "foo1")
+        XCTAssertEqual(models.last?.name, "foo3")
     }
 
     func testHTTPError() throws {
@@ -144,7 +184,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let exp = expectation(description: "testHTTPError")
         let resource = FooBarResources.getFoo(input: "123")
         var error: RESTWebServiceError?
-        let request = sut.get(resource: resource) { result in
+        let request = sut.get(with: resource) { result in
             if case let .failure(resultError) = result {
                 error = resultError
             }
@@ -163,7 +203,8 @@ final class RESTWebServiceManagerTests: XCTestCase {
         ("testInit", testInit),
         ("testGetWithPathParams", testGetWithPathParams),
         ("testGetWithQueryParams", testGetWithQueryParams),
-        ("testGetWithOffset", testGetWithOffset),
+        ("testGetMultipage", testGetMultipage),
+        ("testGetRemainingPages", testGetRemainingPages),
         ("testHTTPError", testHTTPError)
     ]
 }

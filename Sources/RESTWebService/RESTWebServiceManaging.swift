@@ -11,16 +11,27 @@ import Foundation
 public protocol RESTWebServiceManaging {
 
     @discardableResult
-    func get<Model>(resource: RESTResource<Model>,
-                    successOnMainQueue: Bool,
-                    onCompletion: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest?
+    func get<M>(with resource: RESTResource<M>,
+                successOnMainQueue: Bool,
+                onCompletion: @escaping (Result<M, RESTWebServiceError>) -> Void) -> URLRequest?
+
+    @discardableResult
+    func getMultipage<M: Pageable>(with resource: RESTResource<M>,
+                                   successOnMainQueue: Bool,
+                                   onCompletion: @escaping (Result<[M.Submodel], RESTWebServiceError>) -> Void) -> URLRequest?
 }
 
 public extension RESTWebServiceManaging {
 
     @discardableResult
-    func get<Model>(resource: RESTResource<Model>,
-                    onCompletion: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest? {
-        return get(resource: resource, successOnMainQueue: true, onCompletion: onCompletion)
+    func get<M>(with resource: RESTResource<M>,
+                onCompletion: @escaping (Result<M, RESTWebServiceError>) -> Void) -> URLRequest? {
+        return get(with: resource, successOnMainQueue: true, onCompletion: onCompletion)
+    }
+
+    @discardableResult
+    func getMultipage<M: Pageable>(with resource: RESTResource<M>,
+                                   onCompletion: @escaping (Result<[M.Submodel], RESTWebServiceError>) -> Void) -> URLRequest? {
+        return getMultipage(with: resource, successOnMainQueue: true, onCompletion: onCompletion)
     }
 }

@@ -20,9 +20,9 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
     }
 
     @discardableResult
-    public func get<Model>(resource: RESTResource<Model>,
-                           successOnMainQueue: Bool = true,
-                           onCompletion: @escaping (Result<Model, RESTWebServiceError>) -> Void) -> URLRequest? {
+    public func get<M>(with resource: RESTResource<M>,
+                       successOnMainQueue: Bool = true,
+                       onCompletion: @escaping (Result<M, RESTWebServiceError>) -> Void) -> URLRequest? {
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
             let error = RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
@@ -77,7 +77,7 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
             }
             else if let validData = data {
                 do {
-                    let model:Model = try JSONDecoder().decode(Model.self, from: validData)
+                    let model:M = try JSONDecoder().decode(M.self, from: validData)
                     if successOnMainQueue {
                         DispatchQueue.main.async {
                             onCompletion(.success(model))
@@ -95,6 +95,69 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
         }
         task.resume()
 
+        return request
+    }
+
+    @discardableResult
+    public func getMultipage<M: Pageable>(with resource: RESTResource<M>,
+                                          successOnMainQueue: Bool = true,
+                                          onCompletion: @escaping (Result<[M.Submodel], RESTWebServiceError>) -> Void) -> URLRequest? {
+        let initialSubmodels: [M.Submodel] = []
+        let request = getRemainingPages(with: resource, at: 0, existingSubmodels: initialSubmodels) { result in
+            switch result {
+            case let .success(resultSubmodels):
+                if successOnMainQueue {
+                    DispatchQueue.main.async {
+                        onCompletion(.success(resultSubmodels))
+                    }
+                } else {
+                    onCompletion(.success(resultSubmodels))
+                }
+            case let .failure(error):
+                onCompletion(.failure(error))
+            }
+        }
+        return request
+    }
+}
+
+extension RESTWebServiceManager {
+
+    @discardableResult
+    func getRemainingPages<M: Pageable>(with resource: RESTResource<M>,
+                                        at offset: UInt,
+                                        existingSubmodels: [M.Submodel],
+                                        onCompletion: @escaping (Result<[M.Submodel], RESTWebServiceError>) -> Void) -> URLRequest? {
+        let request = get(with: resource, successOnMainQueue: false) { [weak self] result in
+            switch result {
+            case let .success(resultModel):
+                let submodels = resultModel.submodels
+                let appendedSubmodels = existingSubmodels + submodels
+                let resultCount = UInt(appendedSubmodels.count)
+                if resultCount < resultModel.totalCount {
+                    // we don't have them all yet, need to recursivly make another request
+                    // TODO: need to handle missing offset in resource, exiting with fatalError for now
+                    guard let offsetQueryItem = resource.offsetQueryItem else { fatalError() }
+
+                    // create a new resource identical to the original except with a new offset
+                    let newOffsetQueryItem = URLQueryItem(name: offsetQueryItem.name, value: String(resultCount))
+                    let newNesource = RESTResource<M>(path: resource.path,
+                                                      headers: resource.headers,
+                                                      queryParameters: resource.queryParameters,
+                                                      model: resource.model,
+                                                      offsetQueryItem: newOffsetQueryItem)
+                    self?.getRemainingPages(with: newNesource,
+                                            at: resultCount,
+                                            existingSubmodels: appendedSubmodels,
+                                            onCompletion: onCompletion)
+                } else {
+                    // we are done with the recursion!
+                    onCompletion(.success(appendedSubmodels))
+                }
+            case let .failure(error):
+                onCompletion(.failure(error))
+            }
+        }
         return request
     }
 }
