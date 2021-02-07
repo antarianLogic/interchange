@@ -57,6 +57,15 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
             request.setValue(header.value, forHTTPHeaderField: header.key)
         }
 
+//        if let cachedResponse = session.configuration.urlCache?.cachedResponse(for: request),
+//           let httpURLResponse = cachedResponse.response as? HTTPURLResponse {
+//            if let date = httpURLResponse.value(forHTTPHeaderField: "Date") {
+//                print ("date: \(date)")
+//            } else if let lastModified = httpURLResponse.value(forHTTPHeaderField: "Last-Modified") {
+//                print ("lastModified: \(lastModified)")
+//            }
+//        }
+
         let task = session.dataTask(with: request) { data, response, error in
             if let validError = error {
                 let dataTaskError = RESTWebServiceError.urlSessionDataTaskError(validError)
