@@ -14,12 +14,16 @@ public struct RESTResource<Model: Codable> {
                 headers: [String : String] = [:],
                 queryParameters: [URLQueryItem] = [],
                 model: Model? = nil,
-                offsetQueryItem: URLQueryItem? = nil) {
+                offsetQueryItem: URLQueryItem? = nil,
+                cacheTime: TimeInterval? = nil,
+                timeout: TimeInterval? = nil) {
         self.path = path
         self.headers = headers
         self.queryParameters = queryParameters
         self.model = model
         self.offsetQueryItem = offsetQueryItem
+        self.cacheTime = cacheTime
+        self.timeout = timeout
     }
 
     public let path: String
@@ -31,4 +35,8 @@ public struct RESTResource<Model: Codable> {
     public let model: Model?
 
     public let offsetQueryItem: URLQueryItem?
+
+    public let cacheTime: TimeInterval?
+
+    public let timeout: TimeInterval?
 }
