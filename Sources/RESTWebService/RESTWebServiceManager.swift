@@ -57,21 +57,20 @@ public class RESTWebServiceManager : RESTWebServiceManaging {
             request.setValue(header.value, forHTTPHeaderField: header.key)
         }
 
-        if let cacheTime = resource.cacheTime,
-           cacheTime > 0,
+        if let cacheInterval = resource.cacheInterval,
+           cacheInterval > 0,
            let cachedResponse = session.configuration.urlCache?.cachedResponse(for: request),
            let httpURLResponse = cachedResponse.response as? HTTPURLResponse,
            let dateString = httpURLResponse.value(forHTTPHeaderField: "Date"),
            let date = DateFormatter.rfc822DateFormatter.date(from: dateString),
-           date.timeIntervalSinceNow > cacheTime {
-//            print("cached response not expired, using cache...")
+           date.timeIntervalSinceNow > -cacheInterval {
+            // use cached response
             request.cachePolicy = .returnCacheDataElseLoad
         } // otherwise just use default cachePolicy (.useProtocolCachePolicy)
-//        else { print("cached response expired, making request...") }
 
-        if let timeout = resource.timeout,
-           timeout > 0 {
-            request.timeoutInterval = timeout
+        if let timeoutInterval = resource.timeoutInterval,
+           timeoutInterval > 0 {
+            request.timeoutInterval = timeoutInterval
         }
 
         let task = session.dataTask(with: request) { data, response, error in

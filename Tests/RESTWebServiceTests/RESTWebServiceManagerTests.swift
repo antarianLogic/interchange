@@ -199,6 +199,8 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertNotNil(error)
     }
 
+    // TODO: figure out how to test cacheInterval and timeoutInterval
+
     static var allTests = [
         ("testInit", testInit),
         ("testGetWithPathParams", testGetWithPathParams),
