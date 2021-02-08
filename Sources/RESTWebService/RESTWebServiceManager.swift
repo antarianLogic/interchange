@@ -161,7 +161,9 @@ extension RESTWebServiceManager {
                                                       headers: resource.headers,
                                                       queryParameters: resource.queryParameters,
                                                       model: resource.model,
-                                                      offsetQueryItem: newOffsetQueryItem)
+                                                      offsetQueryItem: newOffsetQueryItem,
+                                                      cacheInterval: resource.cacheInterval,
+                                                      timeoutInterval: resource.timeoutInterval)
                     self?.getRemainingPages(with: newNesource,
                                             at: resultCount,
                                             existingSubmodels: appendedSubmodels,
