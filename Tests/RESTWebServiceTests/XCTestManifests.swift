@@ -12,6 +12,7 @@ import XCTest
 public func allTests() -> [XCTestCaseEntry] {
     return [
         testCase(RESTWebServiceManagerTests.allTests),
+        testCase(MultipageGetterTests.allTests)
     ]
 }
 #endif

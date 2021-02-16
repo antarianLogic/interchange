@@ -1,0 +1,115 @@
+//
+//  MultipageGetterTests.swift
+//  RESTWebServiceTests
+//
+//  Created by Carl Sheppard on 2/11/21.
+//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
+//
+
+import XCTest
+import Combine
+import Mocker
+@testable import RESTWebService
+
+final class MultipageGetterTests: XCTestCase {
+
+    override class func setUp() {
+        Mock.registerAll()
+    }
+
+    var cancellables: Set<AnyCancellable> = []
+
+    func testGetNextPageIncomplete() throws {
+        let sut = MultipageGetter(initialResource: FooBarResources.getFoos(),
+                                  manager: RESTWebServiceManager(baseURL: URL.BaseURLPresets.base))
+        XCTAssertEqual(sut.recievedCount, 0)
+        XCTAssertNil(sut.totalCount)
+        XCTAssertEqual(sut.currentResource, FooBarResources.getFoos())
+        XCTAssertFalse(sut.receivedAllPages)
+        let exp = expectation(description: "testGetNextPageIncomplete")
+        var models: [FoosModel] = []
+        let cancellable = sut.publisher.sink { completion in
+            XCTFail("should not have recieved completion yet")
+        } receiveValue: { output in
+            models.append(output)
+            exp.fulfill()
+        }
+        cancellables.insert(cancellable)
+        let status = sut.getNextPage()
+        XCTAssertTrue(status)
+        waitForExpectations(timeout: 1) { (error) in
+            XCTAssertNil(error)
+        }
+        XCTAssertEqual(sut.recievedCount, 2)
+        XCTAssertEqual(sut.totalCount, 3)
+        XCTAssertEqual(sut.currentResource, FooBarResources.getFoos())
+        XCTAssertFalse(sut.receivedAllPages)
+        XCTAssertEqual(models.count, 1)
+    }
+
+    func testGetNextPageComplete() throws {
+        let sut = MultipageGetter(initialResource: FooBarResources.getFoos(),
+                                  manager: RESTWebServiceManager(baseURL: URL.BaseURLPresets.base))
+        let exp = expectation(description: "testGetNextPageComplete")
+        var models: [FoosModel] = []
+        let cancellable = sut.publisher.sink { completion in
+            switch completion {
+            case let .failure(error):
+                XCTFail("should not have recieved failure, error: \(error)")
+            default: break
+            }
+            exp.fulfill()
+        } receiveValue: { output in
+            models.append(output)
+            guard !sut.receivedAllPages else { return }
+
+            let status = sut.getNextPage()
+            XCTAssertTrue(status)
+        }
+        cancellables.insert(cancellable)
+        let status = sut.getNextPage()
+        XCTAssertTrue(status)
+        waitForExpectations(timeout: 1) { (error) in
+            XCTAssertNil(error)
+        }
+        XCTAssertEqual(sut.recievedCount, 3)
+        XCTAssertEqual(sut.totalCount, 3)
+        XCTAssertEqual(sut.currentResource, FooBarResources.getFoos2())
+        XCTAssertTrue(sut.receivedAllPages)
+        XCTAssertEqual(models.count, 2)
+    }
+
+    func testGetNextPageCompleteFirstPass() throws {
+        let sut = MultipageGetter(initialResource: FooBarResources.getFoos3(),
+                                  manager: RESTWebServiceManager(baseURL: URL.BaseURLPresets.base))
+        let exp = expectation(description: "testGetNextPageCompleteFirstPass")
+        var models: [FoosModel] = []
+        let cancellable = sut.publisher.sink { completion in
+            switch completion {
+            case .failure:
+                XCTFail("should not have recieved failure")
+            default: break
+            }
+            exp.fulfill()
+        } receiveValue: { output in
+            models.append(output)
+        }
+        cancellables.insert(cancellable)
+        let status = sut.getNextPage()
+        XCTAssertTrue(status)
+        waitForExpectations(timeout: 1) { (error) in
+            XCTAssertNil(error)
+        }
+        XCTAssertEqual(sut.recievedCount, 3)
+        XCTAssertEqual(sut.totalCount, 3)
+        XCTAssertEqual(sut.currentResource, FooBarResources.getFoos3())
+        XCTAssertTrue(sut.receivedAllPages)
+        XCTAssertEqual(models.count, 1)
+    }
+
+    static var allTests = [
+        ("testGetNextPageIncomplete", testGetNextPageIncomplete),
+        ("testGetNextPageComplete", testGetNextPageComplete),
+        ("testGetNextPageCompleteFirstPass", testGetNextPageCompleteFirstPass)
+    ]
+}

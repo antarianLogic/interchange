@@ -6,32 +6,15 @@
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
-import Foundation
+import Combine
 
 public protocol RESTWebServiceManaging {
 
-    @discardableResult
-    func get<M>(with resource: RESTResource<M>,
-                successOnMainQueue: Bool,
-                onCompletion: @escaping (Result<M, RESTWebServiceError>) -> Void) -> URLRequest?
+    func get<M>(with resource: RESTResource<M>) -> AnyPublisher<M, RESTWebServiceError>
 
-    @discardableResult
-    func getMultipage<M: Pageable>(with resource: RESTResource<M>,
-                                   successOnMainQueue: Bool,
-                                   onCompletion: @escaping (Result<[M.Submodel], RESTWebServiceError>) -> Void) -> URLRequest?
-}
+    func getAllPages<M: Pageable>(with resource: RESTResource<M>) -> AnyPublisher<[M], RESTWebServiceError>
 
-public extension RESTWebServiceManaging {
+//    func getMultipage<M: Pageable>(with resource: RESTResource<M>) -> AnyPublisher<[M.Submodel], RESTWebServiceError> where M.Submodel: Decodable
 
-    @discardableResult
-    func get<M>(with resource: RESTResource<M>,
-                onCompletion: @escaping (Result<M, RESTWebServiceError>) -> Void) -> URLRequest? {
-        return get(with: resource, successOnMainQueue: true, onCompletion: onCompletion)
-    }
-
-    @discardableResult
-    func getMultipage<M: Pageable>(with resource: RESTResource<M>,
-                                   onCompletion: @escaping (Result<[M.Submodel], RESTWebServiceError>) -> Void) -> URLRequest? {
-        return getMultipage(with: resource, successOnMainQueue: true, onCompletion: onCompletion)
-    }
+    func multipageGetter<M: Pageable>(with initialResource: RESTResource<M>) -> MultipageGetter<M>
 }

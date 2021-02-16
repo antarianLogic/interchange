@@ -7,128 +7,124 @@
 //
 
 import XCTest
+import Combine
+import Mocker
 @testable import RESTWebService
-
-struct FooModel: Codable {
-    let name: String
-}
-
-struct BarModel: Codable {
-    let count: Int?
-}
-
-struct FoosModel: Codable {
-    let count: UInt
-    let offset: UInt
-    let foos: [FooModel]
-}
-
-extension FoosModel: Pageable {
-    var totalCount: UInt { return count }
-    var currentOffset: UInt { return offset }
-    var submodels: [FooModel] { return foos }
-}
-
-enum FooBarResources {
-
-    static func getFoo(input: String) -> RESTResource<FooModel> {
-        return RESTResource(path: "/foo/\(input)",
-                            queryParameters: [])
-    }
-
-    static func getBar(inputs: [String]) -> RESTResource<BarModel> {
-        let inputsString = inputs.joined(separator: ",")
-        return RESTResource(path: "/bar",
-                            headers: ["User-Agent": "Foo/1.0.0 (bar@example.com)"],
-                            queryParameters: [URLQueryItem(name: "inputs", value: inputsString)])
-    }
-
-    static func getFoos() -> RESTResource<FoosModel> {
-        return RESTResource(path: "/foos",
-                            offsetQueryItem: URLQueryItem(name: "offset", value: "0"))
-    }
-
-    static func getFoos2() -> RESTResource<FoosModel> {
-        return RESTResource(path: "/foos",
-                            offsetQueryItem: URLQueryItem(name: "offset", value: "2"))
-    }
-}
 
 final class RESTWebServiceManagerTests: XCTestCase {
 
     override class func setUp() {
-        guard let fooURL = URL(string: "https://example.com/baz/foo/123"),
-              let barURL = URL(string: "https://example.com/bar?inputs=234,345"),
-              let foosURL0 = URL(string: "https://example.com/foos?offset=0"),
-              let foosURL2 = URL(string: "https://example.com/foos?offset=2") else { fatalError("Invalid URL!") }
-
-        URLProtocolStub.testURLs = [fooURL: Data("{ \"name\": \"foo\" }".utf8),
-                                    barURL: Data("{ }".utf8),
-                                    foosURL0: Data("{ \"count\": 3, \"offset\": 0, \"foos\": [ { \"name\": \"foo1\" }, { \"name\": \"foo2\" } ] }".utf8),
-                                    foosURL2: Data("{ \"count\": 3, \"offset\": 2, \"foos\": [ { \"name\": \"foo3\" } ] }".utf8)]
+        Mock.registerAll()
     }
 
     var sut: RESTWebServiceManager!
 
-    func createSUT(baseURLString: String) throws {
-        guard let baseURL = URL(string: baseURLString) else { throw URLError(.badURL) }
-
-        let config = URLSessionConfiguration.ephemeral
-        config.protocolClasses = [URLProtocolStub.self]
-        let session = URLSession(configuration: config)
-        sut = RESTWebServiceManager(baseURL: baseURL, session: session)
-    }
+    var cancellables: Set<AnyCancellable> = []
 
     override func tearDown() {
         sut = nil
     }
 
     func testInit() throws {
-        try createSUT(baseURLString: "https://example.com")
-
+        sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         XCTAssertEqual(sut.baseURL.absoluteString, "https://example.com")
     }
 
     func testGetWithPathParams() throws {
-        try createSUT(baseURLString: "https://example.com/baz")
-
+        sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
         let exp = expectation(description: "testGetWithPathParams")
         let resource = FooBarResources.getFoo(input: "123")
         var model: FooModel!
-        let request = sut.get(with: resource) { result in
-            XCTAssertTrue(Thread.isMainThread)
-            model = try? result.get()
-            exp.fulfill()
-        }
-        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/baz/foo/123")
-        XCTAssertEqual(request?.httpMethod, "GET")
-        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
+        let cancellable = sut.get(with: resource)
+            .sink { completion in
+                XCTAssertFalse(Thread.isMainThread, "on main thread")
+                switch completion {
+                case .finished:
+                    exp.fulfill()
+                case let .failure(error):
+                    XCTFail("publisher returned failure with error: \(error)")
+                }
+            } receiveValue: { receivedModel in
+                model = receivedModel
+            }
+        cancellables.insert(cancellable)
         waitForExpectations(timeout: 1) { (error) in
             XCTAssertNil(error)
         }
-        XCTAssertEqual(model.name, "foo")
+        XCTAssertEqual(model, FooModel.Presets.foo)
     }
 
     func testGetWithQueryParams() throws {
-        try createSUT(baseURLString: "https://example.com")
-
+        sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let exp = expectation(description: "testGetWithQueryParams")
-        let resource = FooBarResources.getBar(inputs: ["234","345"])
+        let resource = FooBarResources.getBar(inputs: ["234", "345"])
         var model: BarModel!
-        let request = sut.get(with: resource) { result in
-            XCTAssertTrue(Thread.isMainThread)
-            model = try? result.get()
-            exp.fulfill()
+        let cancellable = sut.get(with: resource)
+            .receive(on: RunLoop.main)
+            .sink { completion in
+                XCTAssertTrue(Thread.isMainThread, "not on main thread")
+                switch completion {
+                case .finished:
+                    exp.fulfill()
+                case let .failure(error):
+                    XCTFail("publisher returned failure with error: \(error)")
+                }
+            } receiveValue: { receivedModel in
+                model = receivedModel
+            }
+        cancellables.insert(cancellable)
+        waitForExpectations(timeout: 1) { (error) in
+            XCTAssertNil(error)
         }
+        XCTAssertEqual(model, BarModel.Presets.bar)
+    }
+
+    func testGetAllPages() throws {
+        sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let exp = expectation(description: "testGetAllPages")
+        let resource = FooBarResources.getFoos()
+        var models: [FoosModel] = []
+        let cancellable = sut.getAllPages(with: resource)
+            .sink { completion in
+                XCTAssertFalse(Thread.isMainThread, "on main thread")
+                switch completion {
+                case .finished:
+                    exp.fulfill()
+                case let .failure(error):
+                    XCTFail("publisher returned failure with error: \(error)")
+                }
+            } receiveValue: { receivedModels in
+                models = receivedModels
+            }
+        cancellables.insert(cancellable)
+        waitForExpectations(timeout: 1) { (error) in
+            XCTAssertNil(error)
+        }
+        XCTAssertEqual(models.count, 2)
+        XCTAssertEqual(models.first, FoosModel.Presets.foos1)
+        XCTAssertEqual(models.last, FoosModel.Presets.foos2)
+    }
+
+    func testBuildRequestWithPathParams() throws {
+        sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
+        let resource = FooBarResources.getFoo(input: "123")
+        let request = try? sut.buildRequest(with: resource)
+        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/subpath/foo/123")
+        XCTAssertEqual(request?.httpMethod, "GET")
+        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
+    }
+
+    func testBuildRequestWithQueryParams() throws {
+        sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let resource = FooBarResources.getBar(inputs: ["234","345"])
+        let request = try? sut.buildRequest(with: resource)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/bar?inputs=234,345")
         XCTAssertEqual(request?.httpMethod, "GET")
         XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json",
                                                       "User-Agent": "Foo/1.0.0 (bar@example.com)"])
-        waitForExpectations(timeout: 1) { (error) in
-            XCTAssertNil(error)
-        }
-        XCTAssertNil(model.count)
     }
+
+    /*
 
     func testGetMultipage() throws {
         try createSUT(baseURLString: "https://example.com")
@@ -178,21 +174,27 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertEqual(models.last?.name, "foo3")
     }
 
-    func testHTTPError() throws {
-        try createSUT(baseURLString: "https://example.com/invalid")
+     */
 
+    func testHTTPError() throws {
+        sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.invalid)
         let exp = expectation(description: "testHTTPError")
         let resource = FooBarResources.getFoo(input: "123")
-        var error: RESTWebServiceError?
-        let request = sut.get(with: resource) { result in
-            if case let .failure(resultError) = result {
-                error = resultError
+        var error: RESTWebServiceError!
+        let cancellable = sut.get(with: resource)
+            .sink { completion in
+                XCTAssertFalse(Thread.isMainThread, "on main thread")
+                switch completion {
+                case .finished:
+                    XCTFail("publisher returned finished")
+                case let .failure(completionError):
+                    error = completionError
+                }
+                exp.fulfill()
+            } receiveValue: { receivedModel in
+                XCTFail("publisher returned value: \(receivedModel)")
             }
-            exp.fulfill()
-        }
-        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/invalid/foo/123")
-        XCTAssertEqual(request?.httpMethod, "GET")
-        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
+        cancellables.insert(cancellable)
         waitForExpectations(timeout: 1) { (expError) in
             XCTAssertNil(expError)
         }
@@ -205,8 +207,11 @@ final class RESTWebServiceManagerTests: XCTestCase {
         ("testInit", testInit),
         ("testGetWithPathParams", testGetWithPathParams),
         ("testGetWithQueryParams", testGetWithQueryParams),
-        ("testGetMultipage", testGetMultipage),
-        ("testGetRemainingPages", testGetRemainingPages),
+        ("testGetAllPages", testGetAllPages),
+        ("testBuildRequestWithPathParams", testBuildRequestWithPathParams),
+        ("testBuildRequestWithQueryParams", testBuildRequestWithQueryParams),
+//        ("testGetMultipage", testGetMultipage),
+//        ("testGetRemainingPages", testGetRemainingPages),
         ("testHTTPError", testHTTPError)
     ]
 }

@@ -15,9 +15,23 @@ public enum RESTWebServiceError: Error {
     case urlSessionDataTaskError(Error)
     case httpError(Int, String)
     case jsonDecodingError(Error)
+    case unknown(Error)
 }
 
 extension RESTWebServiceError: CustomDebugStringConvertible {
+
+    public static func errorMapper(error: Error) -> Self {
+        switch error {
+        case let restWebServiceError as Self:
+            return restWebServiceError
+        case let decodingError as DecodingError:
+            return .jsonDecodingError(decodingError)
+        case let urlError as URLError:
+            return .urlSessionDataTaskError(urlError)
+        default:
+            return .unknown(error)
+        }
+    }
 
     public var debugDescription: String {
         switch self {
@@ -26,11 +40,13 @@ extension RESTWebServiceError: CustomDebugStringConvertible {
         case .insufficientURLComponents(let componentsString):
             return "Insufficient URL components: \(componentsString)"
         case .urlSessionDataTaskError(let error):
-            return error.localizedDescription
+            return "URLSession dataTask error: \(error)"
         case .httpError(let statusCode, let errorString):
             return "Recieved HTTP error code: \(statusCode). Raw result JSON: \"\(errorString)\""
         case .jsonDecodingError(let error):
-            return error.localizedDescription
+            return "JSON decoding error: \(error)"
+        case .unknown(let error):
+            return "Unknown error: \(error)"
         }
     }
 }
