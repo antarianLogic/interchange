@@ -48,5 +48,6 @@ extension FoosModel {
     enum Presets {
         static let foos1 = FoosModel(count: 3, offset: 0, foos: [FooModel.Presets.foo1, FooModel.Presets.foo2])
         static let foos2 = FoosModel(count: 3, offset: 2, foos: [FooModel.Presets.foo3])
+        static let foos3 = FoosModel(count: 3, offset: 0, foos: [FooModel.Presets.foo1, FooModel.Presets.foo2, FooModel.Presets.foo3])
     }
 }

@@ -37,7 +37,7 @@ public final class MultipageGetter<M: Codable & Pageable> {
         if totalCount != nil {
             // not first pass
             guard !receivedAllPages else { return false }
-            guard let newResource = currentResource.nextPageResource() else { return false } // TODO: log something here?
+            guard let newResource = currentResource.nextPageResource(at: recievedCount) else { return false } // TODO: log something here?
 
             currentResource = newResource
         } else {

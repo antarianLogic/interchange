@@ -14,7 +14,5 @@ public protocol RESTWebServiceManaging {
 
     func getAllPages<M: Pageable>(with resource: RESTResource<M>) -> AnyPublisher<[M], RESTWebServiceError>
 
-//    func getMultipage<M: Pageable>(with resource: RESTResource<M>) -> AnyPublisher<[M.Submodel], RESTWebServiceError> where M.Submodel: Decodable
-
     func multipageGetter<M: Pageable>(with initialResource: RESTResource<M>) -> MultipageGetter<M>
 }

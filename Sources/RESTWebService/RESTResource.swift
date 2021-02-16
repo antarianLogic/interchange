@@ -61,13 +61,13 @@ public extension RESTResource {
         return UInt(currentOffsetString)
     }
 
-    func nextPageResource() -> RESTResource? {
+    func nextPageResource(at offset: UInt? = nil) -> RESTResource? {
         guard let validPageSize = pageSize,
               let validCurrentOffset = currentOffset,
               let validOffsetQueryItem = offsetQueryItem else { return nil }
 
-        let newOffestString = String(validCurrentOffset + validPageSize)
-        let newOffsetQueryItem = URLQueryItem(name: validOffsetQueryItem.name, value: newOffestString)
+        let newOffset = offset ?? validCurrentOffset + validPageSize
+        let newOffsetQueryItem = URLQueryItem(name: validOffsetQueryItem.name, value: String(newOffset))
         return RESTResource(path: path, headers: headers, queryParameters: queryParameters, model: model,
                             pageSizeQueryItem: pageSizeQueryItem, offsetQueryItem: newOffsetQueryItem,
                             cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)

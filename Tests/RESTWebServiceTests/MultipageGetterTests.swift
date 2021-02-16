@@ -45,6 +45,7 @@ final class MultipageGetterTests: XCTestCase {
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos())
         XCTAssertFalse(sut.receivedAllPages)
         XCTAssertEqual(models.count, 1)
+        XCTAssertEqual(models.first, FoosModel.Presets.foos1)
     }
 
     func testGetNextPageComplete() throws {
@@ -77,6 +78,8 @@ final class MultipageGetterTests: XCTestCase {
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos2())
         XCTAssertTrue(sut.receivedAllPages)
         XCTAssertEqual(models.count, 2)
+        XCTAssertEqual(models.first, FoosModel.Presets.foos1)
+        XCTAssertEqual(models.last, FoosModel.Presets.foos2)
     }
 
     func testGetNextPageCompleteFirstPass() throws {
@@ -105,6 +108,7 @@ final class MultipageGetterTests: XCTestCase {
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos3())
         XCTAssertTrue(sut.receivedAllPages)
         XCTAssertEqual(models.count, 1)
+        XCTAssertEqual(models.first, FoosModel.Presets.foos3)
     }
 
     static var allTests = [
