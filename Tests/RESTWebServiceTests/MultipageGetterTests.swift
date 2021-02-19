@@ -37,9 +37,7 @@ final class MultipageGetterTests: XCTestCase {
         cancellables.insert(cancellable)
         let status = sut.getNextPage()
         XCTAssertTrue(status)
-        waitForExpectations(timeout: 1) { (error) in
-            XCTAssertNil(error)
-        }
+        wait(for: [exp], timeout: 1)
         XCTAssertEqual(sut.recievedCount, 2)
         XCTAssertEqual(sut.totalCount, 3)
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos())
@@ -70,9 +68,7 @@ final class MultipageGetterTests: XCTestCase {
         cancellables.insert(cancellable)
         let status = sut.getNextPage()
         XCTAssertTrue(status)
-        waitForExpectations(timeout: 1) { (error) in
-            XCTAssertNil(error)
-        }
+        wait(for: [exp], timeout: 1)
         XCTAssertEqual(sut.recievedCount, 3)
         XCTAssertEqual(sut.totalCount, 3)
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos2())
@@ -100,9 +96,7 @@ final class MultipageGetterTests: XCTestCase {
         cancellables.insert(cancellable)
         let status = sut.getNextPage()
         XCTAssertTrue(status)
-        waitForExpectations(timeout: 1) { (error) in
-            XCTAssertNil(error)
-        }
+        wait(for: [exp], timeout: 1)
         XCTAssertEqual(sut.recievedCount, 3)
         XCTAssertEqual(sut.totalCount, 3)
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos3())

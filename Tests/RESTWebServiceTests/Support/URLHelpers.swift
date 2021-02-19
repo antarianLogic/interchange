@@ -22,5 +22,6 @@ extension URL {
         static let foos0 = URL(string: String.FullURLPresets.foos0)!
         static let foos2 = URL(string: String.FullURLPresets.foos2)!
         static let foos3 = URL(string: String.FullURLPresets.foos3)!
+        static let invalid = URL(string: String.FullURLPresets.invalid)!
     }
 }

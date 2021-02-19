@@ -40,6 +40,7 @@ extension String {
         static let foos0 = BaseURLPresets.base + PathPresets.foos0.rawValue
         static let foos2 = BaseURLPresets.base + PathPresets.foos2.rawValue
         static let foos3 = BaseURLPresets.base + PathPresets.foos3.rawValue
+        static let invalid = BaseURLPresets.invalid + PathPresets.foo.rawValue
     }
 
     enum JSONPresets: String, CaseIterable {
@@ -48,5 +49,6 @@ extension String {
         case foos0 = "{ \"count\": 3, \"offset\": 0, \"foos\": [ { \"name\": \"foo1\" }, { \"name\": \"foo2\" } ] }"
         case foos2 = "{ \"count\": 3, \"offset\": 2, \"foos\": [ { \"name\": \"foo3\" } ] }"
         case foos3 = "{ \"count\": 3, \"offset\": 0, \"foos\": [ { \"name\": \"foo1\" }, { \"name\": \"foo2\" }, { \"name\": \"foo3\" } ] }"
+        case invalid = "{}"
     }
 }

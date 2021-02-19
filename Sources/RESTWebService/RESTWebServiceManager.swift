@@ -24,12 +24,17 @@ public final class RESTWebServiceManager : RESTWebServiceManaging {
 
     public func get<M>(with resource: RESTResource<M>) -> AnyPublisher<M, RESTWebServiceError> {
 
-        return Just<RESTResource<M>>(resource)
+        // NOTE: It may seem weird to do an Empty first then prepending the resource instead of just starting with a
+        // Just(resource), but doing the later caused random test failures due to the Just sometimes prematurely
+        // finishing before the flatMap publisher could kick in on the utility queue.
+        return Empty(completeImmediately: false)
             .receive(on: DispatchQueue.global(qos: .utility))
+            .prepend(resource)
             .setFailureType(to: RESTWebServiceError.self)
             .tryMap(buildRequest)
             .mapError(RESTWebServiceError.errorMapper)
-            .flatMap(maxPublishers: .unlimited, buildModelPublisher)
+            .flatMap(maxPublishers: .max(1), buildModelPublisher)
+            .first()
             .eraseToAnyPublisher()
     }
 

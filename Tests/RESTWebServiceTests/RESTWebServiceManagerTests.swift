@@ -42,9 +42,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
                 model = receivedModel
             }
         cancellables.insert(cancellable)
-        waitForExpectations(timeout: 1) { (error) in
-            XCTAssertNil(error)
-        }
+        wait(for: [exp], timeout: 1)
         XCTAssertEqual(model, FooModel.Presets.foo)
     }
 
@@ -67,9 +65,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
                 model = receivedModel
             }
         cancellables.insert(cancellable)
-        waitForExpectations(timeout: 1) { (error) in
-            XCTAssertNil(error)
-        }
+        wait(for: [exp], timeout: 1)
         XCTAssertEqual(model, BarModel.Presets.bar)
     }
 
@@ -92,9 +88,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
                 XCTFail("publisher returned value: \(receivedModel)")
             }
         cancellables.insert(cancellable)
-        waitForExpectations(timeout: 1) { (expError) in
-            XCTAssertNil(expError)
-        }
+        wait(for: [exp], timeout: 1)
         XCTAssertNotNil(error)
     }
 
@@ -118,9 +112,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
                 models = receivedModels
             }
         cancellables.insert(cancellable)
-        waitForExpectations(timeout: 1) { (error) in
-            XCTAssertNil(error)
-        }
+        wait(for: [exp], timeout: 1)
         XCTAssertEqual(models.count, 2)
         XCTAssertEqual(models.first, FoosModel.Presets.foos1)
         XCTAssertEqual(models.last, FoosModel.Presets.foos2)
