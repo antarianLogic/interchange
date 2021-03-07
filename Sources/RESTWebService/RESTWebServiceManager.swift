@@ -132,7 +132,7 @@ extension RESTWebServiceManager {
 
         let isIncluded = httpResponse.statusCode >= 200 && httpResponse.statusCode < 204
         guard isIncluded else {
-            let errorString = String(data: data, encoding: .utf8) ?? ""
+            let errorString = String(data: data.prefix(128), encoding: .utf8) ?? ""
             throw RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
         }
 
