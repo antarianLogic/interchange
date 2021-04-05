@@ -122,6 +122,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let exp = expectation(description: "testGetAllPagesWithSafetyLimit")
         let resource = FooBarResources.getFoos()
+        var models: [FoosModel] = []
         var error: RESTWebServiceError!
         let cancellable = sut.getAllPages(with: resource, safetyLimit: 1)
             .sink { completion in
@@ -134,10 +135,12 @@ final class RESTWebServiceManagerTests: XCTestCase {
                 }
                 exp.fulfill()
             } receiveValue: { receivedModels in
-                XCTFail("publisher returned value: \(receivedModels)")
+                models = receivedModels
             }
         cancellables.insert(cancellable)
         wait(for: [exp], timeout: 1)
+        XCTAssertEqual(models.count, 1)
+        XCTAssertEqual(models.first, FoosModel.Presets.foos1)
         XCTAssertNotNil(error)
     }
 

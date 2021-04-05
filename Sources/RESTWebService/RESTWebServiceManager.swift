@@ -47,7 +47,10 @@ public final class RESTWebServiceManager : RESTWebServiceManaging {
                 switch completion {
                 case .finished:
                     subject.send(models)
-                default: break
+                case let .failure(error):
+                    if case .safetyLimitReached = error {
+                        subject.send(models)
+                    }
                 }
                 subject.send(completion: completion)
                 self?.cancellable = nil
