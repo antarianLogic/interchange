@@ -70,4 +70,9 @@ public final class MultipageGetter<M: Codable & Pageable> {
         recievedCount += UInt(model.submodels.count)
         subject.send(model)
     }
+
+    func safetyLimitReached() {
+        let completion: Subscribers.Completion<RESTWebServiceError> = .failure(RESTWebServiceError.safetyLimitReached)
+        receivedCompletion(completion: completion)
+    }
 }

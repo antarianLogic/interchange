@@ -118,6 +118,29 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertEqual(models.last, FoosModel.Presets.foos2)
     }
 
+    func testGetAllPagesWithSafetyLimit() throws {
+        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let exp = expectation(description: "testGetAllPagesWithSafetyLimit")
+        let resource = FooBarResources.getFoos()
+        var error: RESTWebServiceError!
+        let cancellable = sut.getAllPages(with: resource, safetyLimit: 1)
+            .sink { completion in
+                XCTAssertFalse(Thread.isMainThread, "on main thread")
+                switch completion {
+                case .finished:
+                    XCTFail("publisher returned finished")
+                case let .failure(completionError):
+                    error = completionError
+                }
+                exp.fulfill()
+            } receiveValue: { receivedModels in
+                XCTFail("publisher returned value: \(receivedModels)")
+            }
+        cancellables.insert(cancellable)
+        wait(for: [exp], timeout: 1)
+        XCTAssertNotNil(error)
+    }
+
     func testBuildRequestWithPathParams() throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
         let resource = FooBarResources.getFoo(input: "123")
@@ -151,6 +174,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         ("testGetWithQueryParams", testGetWithQueryParams),
         ("testHTTPError", testHTTPError),
         ("testGetAllPages", testGetAllPages),
+        ("testGetAllPagesWithSafetyLimit", testGetAllPagesWithSafetyLimit),
         ("testBuildRequestWithPathParams", testBuildRequestWithPathParams),
         ("testBuildRequestWithQueryParams", testBuildRequestWithQueryParams),
         ("testMultipageGetter", testMultipageGetter)

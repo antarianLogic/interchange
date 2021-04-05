@@ -38,7 +38,7 @@ public final class RESTWebServiceManager : RESTWebServiceManaging {
             .eraseToAnyPublisher()
     }
 
-    public func getAllPages<M: Pageable>(with resource: RESTResource<M>) -> AnyPublisher<[M], RESTWebServiceError> {
+    public func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt = 0) -> AnyPublisher<[M], RESTWebServiceError> {
         let subject = PassthroughSubject<[M], RESTWebServiceError>()
         let getter = multipageGetter(with: resource)
         var models: [M] = []
@@ -54,6 +54,9 @@ public final class RESTWebServiceManager : RESTWebServiceManaging {
             } receiveValue: { receivedModel in
                 models.append(receivedModel)
                 if !getter.receivedAllPages {
+                    if safetyLimit > 0 {
+                        guard getter.recievedCount < safetyLimit else { getter.safetyLimitReached(); return }
+                    }
                     getter.getNextPage()
                 }
             }

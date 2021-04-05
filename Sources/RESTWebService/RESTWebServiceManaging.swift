@@ -12,7 +12,7 @@ public protocol RESTWebServiceManaging {
 
     func get<M>(with resource: RESTResource<M>) -> AnyPublisher<M, RESTWebServiceError>
 
-    func getAllPages<M: Pageable>(with resource: RESTResource<M>) -> AnyPublisher<[M], RESTWebServiceError>
+    func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt) -> AnyPublisher<[M], RESTWebServiceError>
 
     func multipageGetter<M: Pageable>(with initialResource: RESTResource<M>) -> MultipageGetter<M>
 }
