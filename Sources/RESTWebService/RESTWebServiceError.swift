@@ -16,6 +16,7 @@ public enum RESTWebServiceError: Error {
     case httpError(Int, String)
     case jsonDecodingError(Error)
     case safetyLimitReached
+    case downstreamError(String)
     case unknown(Error)
 }
 
@@ -48,6 +49,8 @@ extension RESTWebServiceError: CustomDebugStringConvertible {
             return "JSON decoding error: \(error)"
         case .safetyLimitReached:
             return "Safety limit reached"
+        case .downstreamError(let string):
+            return "Downstream error: \(string)"
         case .unknown(let error):
             return "Unknown error: \(error)"
         }
