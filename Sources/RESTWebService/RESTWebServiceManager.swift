@@ -9,18 +9,21 @@
 import Foundation
 import Combine
 
-public final class RESTWebServiceManager : RESTWebServiceManaging {
-
-    let baseURL: URL
-    let session: URLSession
-
-    private var cancellable: AnyCancellable?
+public final class RESTWebServiceManager {
 
     public required init(baseURL: URL,
                          session: URLSession = URLSession.shared) {
         self.baseURL = baseURL
         self.session = session
     }
+
+    let baseURL: URL
+    let session: URLSession
+
+    var cancellable: AnyCancellable?
+}
+
+extension RESTWebServiceManager: RESTWebServiceManaging {
 
     public func get<M>(with resource: RESTResource<M>) -> AnyPublisher<M, RESTWebServiceError> {
 

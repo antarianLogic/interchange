@@ -10,26 +10,12 @@ import Combine
 
 public final class MultipageGetter<M: Codable & Pageable> {
 
-    public private(set) var recievedCount: UInt = 0
-    public private(set) var totalCount: UInt?
-
     public var publisher: AnyPublisher<M, RESTWebServiceError> { subject.eraseToAnyPublisher() }
 
     public var receivedAllPages: Bool {
         guard let validTotalCount = totalCount else { return false }
 
         return recievedCount >= validTotalCount
-    }
-
-    private(set) var currentResource: RESTResource<M>
-    let manager: RESTWebServiceManaging
-    let subject = PassthroughSubject<M, RESTWebServiceError>()
-    private var cancellables: Set<AnyCancellable> = []
-
-    init(initialResource: RESTResource<M>,
-         manager : RESTWebServiceManaging) {
-        self.currentResource = initialResource
-        self.manager = manager
     }
 
     @discardableResult
@@ -50,6 +36,19 @@ public final class MultipageGetter<M: Codable & Pageable> {
                   receiveValue: receivedValue)
         cancellables.insert(cancellable)
         return true
+    }
+
+    var recievedCount: UInt = 0
+    var totalCount: UInt?
+    var currentResource: RESTResource<M>
+    let manager: RESTWebServiceManaging
+    let subject = PassthroughSubject<M, RESTWebServiceError>()
+    var cancellables: Set<AnyCancellable> = []
+
+    init(initialResource: RESTResource<M>,
+         manager : RESTWebServiceManaging) {
+        self.currentResource = initialResource
+        self.manager = manager
     }
 
     func receivedCompletion(completion: Subscribers.Completion<RESTWebServiceError>) {
