@@ -44,7 +44,7 @@ extension RESTWebServiceError: CustomDebugStringConvertible {
         case .urlSessionDataTaskError(let error):
             return "URLSession dataTask error: \(error)"
         case .httpError(let statusCode, let errorString):
-            return "Recieved HTTP error code: \(statusCode). Raw result JSON: \"\(errorString)\""
+            return "Received HTTP error code: \(statusCode). Raw result JSON: \"\(errorString)\""
         case .jsonDecodingError(let error):
             return "JSON decoding error: \(error)"
         case .safetyLimitReached:

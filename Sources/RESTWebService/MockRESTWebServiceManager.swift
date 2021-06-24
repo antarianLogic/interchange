@@ -15,6 +15,8 @@ public final class MockRESTWebServiceManager {
         self.shouldFail = shouldFail
     }
 
+    public var mockData: Any? = nil
+
     var shouldFail = false
 
     var singleSubject: AnyObject? = nil
@@ -27,18 +29,16 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         let subject = PassthroughSubject<M, RESTWebServiceError>()
         singleSubject = subject
         if shouldFail {
-            DispatchQueue.global(qos: .utility).async { [weak self] in
+            DispatchQueue.global(qos: .utility).async {
                 let error = RESTWebServiceError.httpError(404, "404 Not Found")
                 subject.send(completion: .failure(error))
-                self?.singleSubject = nil
             }
         } else {
-            guard let model = try? JSONDecoder().decode(M.self, from: Data()) else { fatalError() }
+            guard let model = mockData as? M else { fatalError() }
 
-            DispatchQueue.global(qos: .utility).async { [weak self] in
+            DispatchQueue.global(qos: .utility).async {
                 subject.send(model)
                 subject.send(completion: .finished)
-                self?.singleSubject = nil
             }
         }
         return subject
@@ -50,20 +50,18 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         let subject = PassthroughSubject<[M], RESTWebServiceError>()
         arraySubject = subject
         if shouldFail {
-            DispatchQueue.global(qos: .utility).async { [weak self] in
+            DispatchQueue.global(qos: .utility).async {
                 let error = RESTWebServiceError.httpError(404, "404 Not Found")
                 subject.send(completion: .failure(error))
-                self?.arraySubject = nil
             }
         } else {
-            guard let model = try? JSONDecoder().decode([M].self, from: Data()) else { fatalError() }
+            guard let model = mockData as? [M] else { fatalError() }
 
-            DispatchQueue.global(qos: .utility).async { [weak self] in
+            DispatchQueue.global(qos: .utility).async {
                 subject.send(model)
-                DispatchQueue.global(qos: .utility).async { [weak self] in
+                DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
                     subject.send(model)
                     subject.send(completion: .finished)
-                    self?.arraySubject = nil
                 }
             }
         }

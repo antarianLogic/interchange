@@ -22,14 +22,14 @@ final class MultipageGetterTests: XCTestCase {
     func testGetNextPageIncomplete() throws {
         let sut = MultipageGetter(initialResource: FooBarResources.getFoos(),
                                   manager: RESTWebServiceManager(baseURL: URL.BaseURLPresets.base))
-        XCTAssertEqual(sut.recievedCount, 0)
+        XCTAssertEqual(sut.receivedCount, 0)
         XCTAssertNil(sut.totalCount)
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos())
         XCTAssertFalse(sut.receivedAllPages)
         let exp = expectation(description: "testGetNextPageIncomplete")
         var models: [FoosModel] = []
         let cancellable = sut.publisher.sink { completion in
-            XCTFail("should not have recieved completion yet")
+            XCTFail("should not have received completion yet")
         } receiveValue: { output in
             models.append(output)
             exp.fulfill()
@@ -38,7 +38,7 @@ final class MultipageGetterTests: XCTestCase {
         let status = sut.getNextPage()
         XCTAssertTrue(status)
         wait(for: [exp], timeout: 1)
-        XCTAssertEqual(sut.recievedCount, 2)
+        XCTAssertEqual(sut.receivedCount, 2)
         XCTAssertEqual(sut.totalCount, 3)
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos())
         XCTAssertFalse(sut.receivedAllPages)
@@ -54,7 +54,7 @@ final class MultipageGetterTests: XCTestCase {
         let cancellable = sut.publisher.sink { completion in
             switch completion {
             case let .failure(error):
-                XCTFail("should not have recieved failure, error: \(error)")
+                XCTFail("should not have received failure, error: \(error)")
             default: break
             }
             exp.fulfill()
@@ -69,7 +69,7 @@ final class MultipageGetterTests: XCTestCase {
         let status = sut.getNextPage()
         XCTAssertTrue(status)
         wait(for: [exp], timeout: 1)
-        XCTAssertEqual(sut.recievedCount, 3)
+        XCTAssertEqual(sut.receivedCount, 3)
         XCTAssertEqual(sut.totalCount, 3)
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos2())
         XCTAssertTrue(sut.receivedAllPages)
@@ -86,7 +86,7 @@ final class MultipageGetterTests: XCTestCase {
         let cancellable = sut.publisher.sink { completion in
             switch completion {
             case .failure:
-                XCTFail("should not have recieved failure")
+                XCTFail("should not have received failure")
             default: break
             }
             exp.fulfill()
@@ -97,7 +97,7 @@ final class MultipageGetterTests: XCTestCase {
         let status = sut.getNextPage()
         XCTAssertTrue(status)
         wait(for: [exp], timeout: 1)
-        XCTAssertEqual(sut.recievedCount, 3)
+        XCTAssertEqual(sut.receivedCount, 3)
         XCTAssertEqual(sut.totalCount, 3)
         XCTAssertEqual(sut.currentResource, FooBarResources.getFoos3())
         XCTAssertTrue(sut.receivedAllPages)

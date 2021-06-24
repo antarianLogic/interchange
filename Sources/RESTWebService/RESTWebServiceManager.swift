@@ -61,7 +61,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
                 models.append(receivedModel)
                 if !getter.receivedAllPages {
                     if safetyLimit > 0 {
-                        guard getter.recievedCount < safetyLimit else { getter.safetyLimitReached(); return }
+                        guard getter.receivedCount < safetyLimit else { getter.safetyLimitReached(); return }
                     }
                     getter.getNextPage()
                 }
