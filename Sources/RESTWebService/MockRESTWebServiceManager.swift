@@ -29,16 +29,18 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         let subject = PassthroughSubject<M, RESTWebServiceError>()
         singleSubject = subject
         if shouldFail {
-            DispatchQueue.global(qos: .utility).async {
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
                 let error = RESTWebServiceError.httpError(404, "404 Not Found")
                 subject.send(completion: .failure(error))
             }
         } else {
             guard let model = mockData as? M else { fatalError() }
 
-            DispatchQueue.global(qos: .utility).async {
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
                 subject.send(model)
-                subject.send(completion: .finished)
+                DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
+                    subject.send(completion: .finished)
+                }
             }
         }
         return subject
@@ -50,18 +52,20 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         let subject = PassthroughSubject<[M], RESTWebServiceError>()
         arraySubject = subject
         if shouldFail {
-            DispatchQueue.global(qos: .utility).async {
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
                 let error = RESTWebServiceError.httpError(404, "404 Not Found")
                 subject.send(completion: .failure(error))
             }
         } else {
             guard let model = mockData as? [M] else { fatalError() }
 
-            DispatchQueue.global(qos: .utility).async {
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
                 subject.send(model)
                 DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
                     subject.send(model)
-                    subject.send(completion: .finished)
+                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
+                        subject.send(completion: .finished)
+                    }
                 }
             }
         }
