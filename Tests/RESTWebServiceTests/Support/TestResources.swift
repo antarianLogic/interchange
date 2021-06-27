@@ -16,6 +16,12 @@ enum FooBarResources {
                             queryParameters: [])
     }
 
+    static func getFooXML(input: String) -> RESTResource<FooModel> {
+        return RESTResource(path: "/foo/\(input)",
+                            headers: ["Accept": "application/xml"],
+                            queryParameters: [])
+    }
+
     static func getBar(inputs: [String]) -> RESTResource<BarModel> {
         let inputsString = inputs.joined(separator: ",")
         return RESTResource(path: "/bar",
@@ -39,5 +45,23 @@ enum FooBarResources {
         return RESTResource(path: "/foos",
                             pageSizeQueryItem: URLQueryItem(name: "pageSize", value: "3"),
                             offsetQueryItem: URLQueryItem(name: "offset", value: "0"))
+    }
+
+    static func getFoos4() -> RESTResource<FoosModel> {
+        return RESTResource(path: "/foos",
+                            pageSizeQueryItem: URLQueryItem(name: "pageSize", value: "2"),
+                            pageQueryItem: URLQueryItem(name: "page", value: "1"))
+    }
+
+    static func getFoos5() -> RESTResource<FoosModel> {
+        return RESTResource(path: "/foos",
+                            pageSizeQueryItem: URLQueryItem(name: "pageSize", value: "2"),
+                            pageQueryItem: URLQueryItem(name: "page", value: "2"))
+    }
+
+    static func getFoos6() -> RESTResource<FoosModel> {
+        return RESTResource(path: "/foos",
+                            pageSizeQueryItem: URLQueryItem(name: "pageSize", value: "3"),
+                            pageQueryItem: URLQueryItem(name: "page", value: "1"))
     }
 }

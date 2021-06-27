@@ -22,6 +22,8 @@ public struct RESTResource<Model: Codable> {
 
     public let offsetQueryItem: URLQueryItem?
 
+    public let pageQueryItem: URLQueryItem?
+
     public let cacheInterval: TimeInterval?
 
     public let timeoutInterval: TimeInterval?
@@ -32,6 +34,7 @@ public struct RESTResource<Model: Codable> {
                 model: Model? = nil,
                 pageSizeQueryItem: URLQueryItem? = nil,
                 offsetQueryItem: URLQueryItem? = nil,
+                pageQueryItem: URLQueryItem? = nil,
                 cacheInterval: TimeInterval? = nil,
                 timeoutInterval: TimeInterval? = nil) {
         self.path = path
@@ -40,6 +43,7 @@ public struct RESTResource<Model: Codable> {
         self.model = model
         self.pageSizeQueryItem = pageSizeQueryItem
         self.offsetQueryItem = offsetQueryItem
+        self.pageQueryItem = pageQueryItem
         self.cacheInterval = cacheInterval
         self.timeoutInterval = timeoutInterval
     }
@@ -56,20 +60,36 @@ public extension RESTResource {
     }
 
     var currentOffset: UInt? {
-        guard let currentOffsetString = offsetQueryItem?.value else { return nil }
-
-        return UInt(currentOffsetString)
+        if let currentOffsetString = offsetQueryItem?.value {
+            return UInt(currentOffsetString)
+        } else if let currentPageString = pageQueryItem?.value,
+                  let currentPage = UInt(currentPageString),
+                  let validPageSize = pageSize {
+            return (currentPage - 1) * validPageSize
+        } else {
+            return nil
+        }
     }
 
     func nextPageResource(at offset: UInt? = nil) -> RESTResource? {
         guard let validPageSize = pageSize,
-              let validCurrentOffset = currentOffset,
-              let validOffsetQueryItem = offsetQueryItem else { return nil }
+              let validCurrentOffset = currentOffset else { return nil }
 
-        let newOffset = offset ?? validCurrentOffset + validPageSize
-        let newOffsetQueryItem = URLQueryItem(name: validOffsetQueryItem.name, value: String(newOffset))
-        return RESTResource(path: path, headers: headers, queryParameters: queryParameters, model: model,
-                            pageSizeQueryItem: pageSizeQueryItem, offsetQueryItem: newOffsetQueryItem,
-                            cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)
+        let newOffset = offset ?? (validCurrentOffset + validPageSize)
+
+        if let validOffsetQueryItem = offsetQueryItem {
+            let newOffsetQueryItem = URLQueryItem(name: validOffsetQueryItem.name, value: String(newOffset))
+            return RESTResource(path: path, headers: headers, queryParameters: queryParameters, model: model,
+                                pageSizeQueryItem: pageSizeQueryItem, offsetQueryItem: newOffsetQueryItem,
+                                cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)
+        } else if let validPageQueryItem = pageQueryItem {
+            let newPage = (newOffset / validPageSize) + 1
+            let newPageQueryItem = URLQueryItem(name: validPageQueryItem.name, value: String(newPage))
+            return RESTResource(path: path, headers: headers, queryParameters: queryParameters, model: model,
+                                pageSizeQueryItem: pageSizeQueryItem, pageQueryItem: newPageQueryItem,
+                                cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)
+        } else {
+            return nil
+        }
     }
 }

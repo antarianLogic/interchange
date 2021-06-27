@@ -92,6 +92,8 @@ extension RESTWebServiceManager {
         }
         if let offsetQueryItem = resource.offsetQueryItem {
             queryItems.append(offsetQueryItem)
+        } else if let pageQueryItem = resource.pageQueryItem {
+            queryItems.append(pageQueryItem)
         }
         if !queryItems.isEmpty {
             validComponents.queryItems = queryItems

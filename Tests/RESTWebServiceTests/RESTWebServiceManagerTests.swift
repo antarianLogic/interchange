@@ -163,6 +163,15 @@ final class RESTWebServiceManagerTests: XCTestCase {
                                                       "User-Agent": "Foo/1.0.0 (bar@example.com)"])
     }
 
+    func testBuildRequestWithAcceptOverride() throws {
+        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
+        let resource = FooBarResources.getFooXML(input: "456")
+        let request = try? sut.buildRequest(with: resource)
+        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/subpath/foo/456")
+        XCTAssertEqual(request?.httpMethod, "GET")
+        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/xml"])
+    }
+
     func testMultipageGetter() throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let resource = FooBarResources.getFoos()
@@ -170,16 +179,4 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertNotNil(getter)
         // testing of returned MultipageGetter is covered by MultipageGetterTests
     }
-
-    static var allTests = [
-        ("testInit", testInit),
-        ("testGetWithPathParams", testGetWithPathParams),
-        ("testGetWithQueryParams", testGetWithQueryParams),
-        ("testHTTPError", testHTTPError),
-        ("testGetAllPages", testGetAllPages),
-        ("testGetAllPagesWithSafetyLimit", testGetAllPagesWithSafetyLimit),
-        ("testBuildRequestWithPathParams", testBuildRequestWithPathParams),
-        ("testBuildRequestWithQueryParams", testBuildRequestWithQueryParams),
-        ("testMultipageGetter", testMultipageGetter)
-    ]
 }
