@@ -27,7 +27,7 @@ public final class MultipageGetter<M: Codable & Pageable> {
 
             currentResource = newResource
         }
-        Task {
+        async {
             do {
                 let model = try await manager.get(with: currentResource)
                 try Task.checkCancellation()
