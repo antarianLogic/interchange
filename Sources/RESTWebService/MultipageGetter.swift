@@ -27,20 +27,18 @@ public final class MultipageGetter<M: Codable & Pageable> {
 
             currentResource = newResource
         }
-        Task.detached { [weak self] in
-            guard let strongSelf = self else { return }
-
+        Task {
             do {
-                let model = try await strongSelf.manager.get(with: strongSelf.currentResource)
+                let model = try await manager.get(with: currentResource)
                 try Task.checkCancellation()
-                strongSelf.totalCount = model.totalCount
-                strongSelf.receivedCount += UInt(model.submodels.count)
-                strongSelf.subject.send(model)
-                if strongSelf.receivedAllPages {
-                    strongSelf.subject.send(completion: .finished)
+                totalCount = model.totalCount
+                receivedCount += UInt(model.submodels.count)
+                subject.send(model)
+                if receivedAllPages {
+                    subject.send(completion: .finished)
                 }
             } catch {
-                strongSelf.subject.send(completion: .failure(error))
+                subject.send(completion: .failure(error))
             }
         }
         return true

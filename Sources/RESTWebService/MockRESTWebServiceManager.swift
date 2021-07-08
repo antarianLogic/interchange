@@ -26,7 +26,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
     public func get<M>(with resource: RESTResource<M>) async throws -> M {
 
-        await Task.sleep(1000)
+        await Task.sleep(10)
 
         guard !shouldFail else {
             throw RESTWebServiceError.httpError(404, "404 Not Found")
