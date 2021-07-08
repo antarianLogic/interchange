@@ -10,9 +10,9 @@ import Combine
 
 public protocol RESTWebServiceManaging {
 
-    func get<M>(with resource: RESTResource<M>) -> AnyPublisher<M, RESTWebServiceError>
+    func get<M>(with resource: RESTResource<M>) async throws -> M
 
-    func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt) -> AnyPublisher<[M], RESTWebServiceError>
+    func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt) -> AnyPublisher<[M], Error>
 
     func multipageGetter<M: Pageable>(with initialResource: RESTResource<M>) -> MultipageGetter<M>
 }

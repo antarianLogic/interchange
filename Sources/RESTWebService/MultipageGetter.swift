@@ -10,7 +10,7 @@ import Combine
 
 public final class MultipageGetter<M: Codable & Pageable> {
 
-    public var publisher: AnyPublisher<M, RESTWebServiceError> { subject.eraseToAnyPublisher() }
+    public var publisher: AnyPublisher<M, Error> { subject.eraseToAnyPublisher() }
 
     public var receivedAllPages: Bool {
         guard let validTotalCount = totalCount else { return false }
@@ -26,15 +26,23 @@ public final class MultipageGetter<M: Codable & Pageable> {
             guard let newResource = currentResource.nextPageResource(at: receivedCount) else { return false } // TODO: log something here?
 
             currentResource = newResource
-        } else {
-            // first pass
-            // skip any more requests after the first one until we have totalCount
-            guard cancellables.isEmpty else { return false }
         }
-        let cancellable = manager.get(with: currentResource)
-            .sink(receiveCompletion: receivedCompletion,
-                  receiveValue: receivedValue)
-        cancellables.insert(cancellable)
+        Task.detached { [weak self] in
+            guard let strongSelf = self else { return }
+
+            do {
+                let model = try await strongSelf.manager.get(with: strongSelf.currentResource)
+                try Task.checkCancellation()
+                strongSelf.totalCount = model.totalCount
+                strongSelf.receivedCount += UInt(model.submodels.count)
+                strongSelf.subject.send(model)
+                if strongSelf.receivedAllPages {
+                    strongSelf.subject.send(completion: .finished)
+                }
+            } catch {
+                strongSelf.subject.send(completion: .failure(error))
+            }
+        }
         return true
     }
 
@@ -42,8 +50,7 @@ public final class MultipageGetter<M: Codable & Pageable> {
     var totalCount: UInt?
     var currentResource: RESTResource<M>
     let manager: RESTWebServiceManaging
-    let subject = PassthroughSubject<M, RESTWebServiceError>()
-    var cancellables: Set<AnyCancellable> = []
+    let subject = PassthroughSubject<M, Error>()
 
     init(initialResource: RESTResource<M>,
          manager : RESTWebServiceManaging) {
@@ -51,27 +58,7 @@ public final class MultipageGetter<M: Codable & Pageable> {
         self.manager = manager
     }
 
-    func receivedCompletion(completion: Subscribers.Completion<RESTWebServiceError>) {
-        switch completion {
-        case .finished:
-            if receivedAllPages {
-                subject.send(completion: completion)
-                cancellables.removeAll()
-            }
-        case .failure:
-            subject.send(completion: completion)
-        }
-    }
-
-    func receivedValue(model: M) {
-        // TODO: maybe check totalCount against value from previous page and log if it is different, cuz that would be weird
-        totalCount = model.totalCount
-        receivedCount += UInt(model.submodels.count)
-        subject.send(model)
-    }
-
     func safetyLimitReached() {
-        let completion: Subscribers.Completion<RESTWebServiceError> = .failure(RESTWebServiceError.safetyLimitReached)
-        receivedCompletion(completion: completion)
+        subject.send(completion: .failure(RESTWebServiceError.safetyLimitReached))
     }
 }

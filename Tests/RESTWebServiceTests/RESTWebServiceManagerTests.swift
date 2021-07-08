@@ -24,72 +24,29 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertEqual(sut.baseURL.absoluteString, "https://example.com")
     }
 
-    func testGetWithPathParams() throws {
+    func testGetWithPathParams() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
-        let exp = expectation(description: "testGetWithPathParams")
         let resource = FooBarResources.getFoo(input: "123")
-        var model: FooModel!
-        let cancellable = sut.get(with: resource)
-            .sink { completion in
-                XCTAssertFalse(Thread.isMainThread, "on main thread")
-                switch completion {
-                case .finished:
-                    exp.fulfill()
-                case let .failure(error):
-                    XCTFail("publisher returned failure with error: \(error)")
-                }
-            } receiveValue: { receivedModel in
-                model = receivedModel
-            }
-        cancellables.insert(cancellable)
-        wait(for: [exp], timeout: 1)
+        let model = try await sut.get(with: resource)
         XCTAssertEqual(model, FooModel.Presets.foo)
     }
 
-    func testGetWithQueryParams() throws {
+    func testGetWithQueryParams() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
-        let exp = expectation(description: "testGetWithQueryParams")
         let resource = FooBarResources.getBar(inputs: ["234", "345"])
-        var model: BarModel!
-        let cancellable = sut.get(with: resource)
-            .receive(on: RunLoop.main)
-            .sink { completion in
-                XCTAssertTrue(Thread.isMainThread, "not on main thread")
-                switch completion {
-                case .finished:
-                    exp.fulfill()
-                case let .failure(error):
-                    XCTFail("publisher returned failure with error: \(error)")
-                }
-            } receiveValue: { receivedModel in
-                model = receivedModel
-            }
-        cancellables.insert(cancellable)
-        wait(for: [exp], timeout: 1)
+        let model = try await sut.get(with: resource)
         XCTAssertEqual(model, BarModel.Presets.bar)
     }
 
-    func testHTTPError() throws {
+    func testHTTPError() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.invalid)
-        let exp = expectation(description: "testHTTPError")
         let resource = FooBarResources.getFoo(input: "123")
-        var error: RESTWebServiceError!
-        let cancellable = sut.get(with: resource)
-            .sink { completion in
-                XCTAssertFalse(Thread.isMainThread, "on main thread")
-                switch completion {
-                case .finished:
-                    XCTFail("publisher returned finished")
-                case let .failure(completionError):
-                    error = completionError
-                }
-                exp.fulfill()
-            } receiveValue: { receivedModel in
-                XCTFail("publisher returned value: \(receivedModel)")
-            }
-        cancellables.insert(cancellable)
-        wait(for: [exp], timeout: 1)
-        XCTAssertNotNil(error)
+        do {
+            let _ = try await sut.get(with: resource)
+            XCTFail("get unexpectedly returned value")
+        } catch {
+            XCTAssertNotNil(error)
+        }
     }
 
     // TODO: figure out how to test cacheInterval and timeoutInterval
@@ -123,7 +80,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let exp = expectation(description: "testGetAllPagesWithSafetyLimit")
         let resource = FooBarResources.getFoos()
         var models: [FoosModel] = []
-        var error: RESTWebServiceError!
+        var error: Error!
         let cancellable = sut.getAllPages(with: resource, safetyLimit: 1)
             .sink { completion in
                 XCTAssertFalse(Thread.isMainThread, "on main thread")

@@ -19,42 +19,30 @@ public final class MockRESTWebServiceManager {
 
     var shouldFail = false
 
-    var singleSubject: AnyObject? = nil
     var arraySubject: AnyObject? = nil
 }
 
 extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
-    public func get<M>(with resource: RESTResource<M>) -> AnyPublisher<M, RESTWebServiceError> {
-        let subject = PassthroughSubject<M, RESTWebServiceError>()
-        singleSubject = subject
-        if shouldFail {
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                let error = RESTWebServiceError.httpError(404, "404 Not Found")
-                subject.send(completion: .failure(error))
-            }
-        } else {
-            guard let model = mockData as? M else { fatalError() }
+    public func get<M>(with resource: RESTResource<M>) async throws -> M {
 
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                subject.send(model)
-                DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                    subject.send(completion: .finished)
-                }
-            }
+        await Task.sleep(1000)
+
+        guard !shouldFail else {
+            throw RESTWebServiceError.httpError(404, "404 Not Found")
         }
-        return subject
-            .receive(on: DispatchQueue.global(qos: .utility))
-            .eraseToAnyPublisher()
+
+        guard let model = mockData as? M else { fatalError() }
+
+        return model
     }
 
-    public func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt) -> AnyPublisher<[M], RESTWebServiceError> {
-        let subject = PassthroughSubject<[M], RESTWebServiceError>()
+    public func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt = 0) -> AnyPublisher<[M], Error> {
+        let subject = PassthroughSubject<[M], Error>()
         arraySubject = subject
         if shouldFail {
             DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                let error = RESTWebServiceError.httpError(404, "404 Not Found")
-                subject.send(completion: .failure(error))
+                subject.send(completion: .failure(RESTWebServiceError.httpError(404, "404 Not Found")))
             }
         } else {
             guard let model = mockData as? [M] else { fatalError() }

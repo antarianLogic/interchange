@@ -25,24 +25,24 @@ public final class RESTWebServiceManager {
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
 
-    public func get<M>(with resource: RESTResource<M>) -> AnyPublisher<M, RESTWebServiceError> {
+    public func get<M>(with resource: RESTResource<M>) async throws -> M {
 
-        // NOTE: It may seem weird to do an Empty first then prepending the resource instead of just starting with a
-        // Just(resource), but doing the later caused random test failures due to the Just sometimes prematurely
-        // finishing before the flatMap publisher could kick in on the utility queue.
-        return Empty(completeImmediately: false)
-            .receive(on: DispatchQueue.global(qos: .utility))
-            .prepend(resource)
-            .setFailureType(to: RESTWebServiceError.self)
-            .tryMap(buildRequest)
-            .mapError(RESTWebServiceError.errorMapper)
-            .flatMap(maxPublishers: .max(1), buildModelPublisher)
-            .first()
-            .eraseToAnyPublisher()
+        let request = try buildRequest(with: resource)
+
+        let (data, response) = try await session.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse {
+            guard httpResponse.statusCode >= 200 && httpResponse.statusCode < 204 else {
+                let errorString = String(data: data.prefix(128), encoding: .utf8) ?? ""
+                throw RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
+            }
+        }
+
+        return try JSONDecoder().decode(M.self, from: data)
     }
 
-    public func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt = 0) -> AnyPublisher<[M], RESTWebServiceError> {
-        let subject = PassthroughSubject<[M], RESTWebServiceError>()
+    public func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt = 0) -> AnyPublisher<[M], Error> {
+        let subject = PassthroughSubject<[M], Error>()
         let getter = multipageGetter(with: resource)
         var models: [M] = []
         cancellable = getter.publisher
@@ -51,7 +51,8 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
                 case .finished:
                     subject.send(models)
                 case let .failure(error):
-                    if case .safetyLimitReached = error {
+                    if case let wsError = error as? RESTWebServiceError,
+                       case .safetyLimitReached = wsError {
                         subject.send(models)
                     }
                 }
@@ -127,26 +128,5 @@ extension RESTWebServiceManager {
         }
 
         return request
-    }
-
-    func buildModelPublisher<M: Decodable>(with request: URLRequest) -> AnyPublisher<M, RESTWebServiceError> {
-        return session.dataTaskPublisher(for: request)
-            .tryFilter(filterOutput)
-            .map(\.data)
-            .decode(type: M.self, decoder: JSONDecoder())
-            .mapError(RESTWebServiceError.errorMapper)
-            .eraseToAnyPublisher()
-    }
-
-    func filterOutput(data: Data, response: URLResponse) throws -> Bool {
-        guard let httpResponse = response as? HTTPURLResponse else { return false }
-
-        let isIncluded = httpResponse.statusCode >= 200 && httpResponse.statusCode < 204
-        guard isIncluded else {
-            let errorString = String(data: data.prefix(128), encoding: .utf8) ?? ""
-            throw RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
-        }
-
-        return isIncluded
     }
 }
