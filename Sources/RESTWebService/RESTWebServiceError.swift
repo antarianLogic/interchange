@@ -6,10 +6,9 @@
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
-import Foundation
-
 public enum RESTWebServiceError: Error {
 
+    case invalidRESTResource
     case invalidBaseURL(String)
     case insufficientURLComponents(String)
     case httpError(Int, String)
@@ -20,6 +19,8 @@ extension RESTWebServiceError: CustomDebugStringConvertible {
 
     public var debugDescription: String {
         switch self {
+        case .invalidRESTResource:
+            return "Invalid REST resource"
         case .invalidBaseURL(let urlString):
             return "Invalid base URL: \(urlString)"
         case .insufficientURLComponents(let componentsString):

@@ -7,20 +7,17 @@
 //
 
 import Foundation
-import Combine
 
-public final class RESTWebServiceManager {
+public actor RESTWebServiceManager {
 
-    public required init(baseURL: URL,
-                         session: URLSession = URLSession.shared) {
+    public init(baseURL: URL,
+                session: URLSession = URLSession.shared) {
         self.baseURL = baseURL
         self.session = session
     }
 
-    let baseURL: URL
-    let session: URLSession
-
-    var cancellable: AnyCancellable?
+    nonisolated let baseURL: URL
+    nonisolated let session: URLSession
 }
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
@@ -41,44 +38,44 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
         return try JSONDecoder().decode(M.self, from: data)
     }
 
-    public func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt = 0) -> AnyPublisher<[M], Error> {
-        let subject = PassthroughSubject<[M], Error>()
-        let getter = multipageGetter(with: resource)
-        var models: [M] = []
-        cancellable = getter.publisher
-            .sink { [weak self] completion in
-                switch completion {
-                case .finished:
-                    subject.send(models)
-                case let .failure(error):
-                    if case let wsError = error as? RESTWebServiceError,
-                       case .safetyLimitReached = wsError {
-                        subject.send(models)
-                    }
-                }
-                subject.send(completion: completion)
-                self?.cancellable = nil
-            } receiveValue: { receivedModel in
-                models.append(receivedModel)
-                if !getter.receivedAllPages {
-                    if safetyLimit > 0 {
-                        guard getter.receivedCount < safetyLimit else { getter.safetyLimitReached(); return }
-                    }
-                    getter.getNextPage()
-                }
-            }
-        getter.getNextPage()
-        return subject.eraseToAnyPublisher()
-    }
+    nonisolated public func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
+                                                    safetyLimit: UInt? = nil) -> AsyncThrowingStream<M, Error> {
 
-    public func multipageGetter<M: Pageable>(with initialResource: RESTResource<M>) -> MultipageGetter<M> {
-        return MultipageGetter(initialResource: initialResource, manager: self)
+        var currentResource = initialResource
+        var totalCount: UInt? = nil
+        var receivedCount: UInt = 0
+
+        return AsyncThrowingStream { [weak self] in
+            guard let strongSelf = self else { return nil }
+
+            if let uSafetyLimit = safetyLimit {
+                guard receivedCount < uSafetyLimit else { throw RESTWebServiceError.safetyLimitReached }
+            }
+
+            if let uTotalCount = totalCount {
+                // not first pass
+                guard receivedCount < uTotalCount else { return nil }
+
+                guard let newResource = currentResource.nextPageResource(at: receivedCount) else {
+                    throw RESTWebServiceError.invalidRESTResource
+                }
+
+                currentResource = newResource
+            }
+            let model = try await strongSelf.get(with: currentResource)
+
+            try Task.checkCancellation()
+
+            totalCount = model.totalCount
+            receivedCount += UInt(model.submodels.count)
+            return model
+        }
     }
 }
 
 extension RESTWebServiceManager {
 
-    func buildRequest<M>(with resource: RESTResource<M>) throws -> URLRequest {
+    nonisolated func buildRequest<M>(with resource: RESTResource<M>) throws -> URLRequest {
 
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {

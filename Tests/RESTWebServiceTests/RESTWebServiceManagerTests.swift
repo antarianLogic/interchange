@@ -7,7 +7,6 @@
 //
 
 import XCTest
-import Combine
 import Mocker
 @testable import RESTWebService
 
@@ -16,8 +15,6 @@ final class RESTWebServiceManagerTests: XCTestCase {
     override class func setUp() {
         Mock.registerAll()
     }
-
-    var cancellables: Set<AnyCancellable> = []
 
     func testInit() throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
@@ -51,54 +48,37 @@ final class RESTWebServiceManagerTests: XCTestCase {
 
     // TODO: figure out how to test cacheInterval and timeoutInterval
 
-    func testGetAllPages() throws {
+    func testGetAllPages() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
-        let exp = expectation(description: "testGetAllPages")
         let resource = FooBarResources.getFoos()
         var models: [FoosModel] = []
-        let cancellable = sut.getAllPages(with: resource)
-            .sink { completion in
-                XCTAssertFalse(Thread.isMainThread, "on main thread")
-                switch completion {
-                case .finished:
-                    exp.fulfill()
-                case let .failure(error):
-                    XCTFail("publisher returned failure with error: \(error)")
-                }
-            } receiveValue: { receivedModels in
-                models = receivedModels
+        do {
+            for try await page in sut.pageStream(with: resource) {
+                models.append(page)
             }
-        cancellables.insert(cancellable)
-        wait(for: [exp], timeout: 1)
+        } catch {
+            XCTFail("pageStream threw error")
+        }
         XCTAssertEqual(models.count, 2)
         XCTAssertEqual(models.first, FoosModel.Presets.foos1)
         XCTAssertEqual(models.last, FoosModel.Presets.foos2)
     }
 
-    func testGetAllPagesWithSafetyLimit() throws {
+    func testGetAllPagesWithSafetyLimit() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
-        let exp = expectation(description: "testGetAllPagesWithSafetyLimit")
         let resource = FooBarResources.getFoos()
         var models: [FoosModel] = []
-        var error: Error!
-        let cancellable = sut.getAllPages(with: resource, safetyLimit: 1)
-            .sink { completion in
-                XCTAssertFalse(Thread.isMainThread, "on main thread")
-                switch completion {
-                case .finished:
-                    XCTFail("publisher returned finished")
-                case let .failure(completionError):
-                    error = completionError
-                }
-                exp.fulfill()
-            } receiveValue: { receivedModels in
-                models = receivedModels
+        var theError: Error!
+        do {
+            for try await page in sut.pageStream(with: resource, safetyLimit: 1) {
+                models.append(page)
             }
-        cancellables.insert(cancellable)
-        wait(for: [exp], timeout: 1)
+        } catch {
+            theError = error
+        }
         XCTAssertEqual(models.count, 1)
         XCTAssertEqual(models.first, FoosModel.Presets.foos1)
-        XCTAssertNotNil(error)
+        XCTAssertNotNil(theError)
     }
 
     func testBuildRequestWithPathParams() throws {
@@ -129,11 +109,101 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/xml"])
     }
 
-    func testMultipageGetter() throws {
+    func testPageStreamIterator() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let resource = FooBarResources.getFoos()
-        let getter = sut.multipageGetter(with: resource)
-        XCTAssertNotNil(getter)
-        // testing of returned MultipageGetter is covered by MultipageGetterTests
+        let stream = sut.pageStream(with: resource, safetyLimit: 1000)
+        var page1: FoosModel!
+        var pageIterator = stream.makeAsyncIterator()
+        do {
+            page1 = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertEqual(page1, FoosModel.Presets.foos1)
+        var page2: FoosModel!
+        do {
+            page2 = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertEqual(page2, FoosModel.Presets.foos2)
+        var pageNil: FoosModel?
+        do {
+            pageNil = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertNil(pageNil)
+    }
+
+    func testPageStreamIteratorDoneFirstPass() async throws {
+        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let resource = FooBarResources.getFoos3()
+        let stream = sut.pageStream(with: resource, safetyLimit: 1000)
+        var page1: FoosModel!
+        var pageIterator = stream.makeAsyncIterator()
+        do {
+            page1 = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertEqual(page1, FoosModel.Presets.foos3)
+        var pageNil: FoosModel?
+        do {
+            pageNil = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertNil(pageNil)
+    }
+
+    func testPageStreamIteratorWithPageQueryItem() async throws {
+        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let resource = FooBarResources.getFoos4()
+        let stream = sut.pageStream(with: resource, safetyLimit: 1000)
+        var page1: FoosModel!
+        var pageIterator = stream.makeAsyncIterator()
+        do {
+            page1 = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertEqual(page1, FoosModel.Presets.foos1)
+        var page2: FoosModel!
+        do {
+            page2 = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertEqual(page2, FoosModel.Presets.foos2)
+        var pageNil: FoosModel?
+        do {
+            pageNil = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertNil(pageNil)
+    }
+
+    func testPageStreamIteratorWithPageQueryItemDoneFirstPass() async throws {
+        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let resource = FooBarResources.getFoos6()
+        let stream = sut.pageStream(with: resource, safetyLimit: 1000)
+        var page1: FoosModel!
+        var pageIterator = stream.makeAsyncIterator()
+        do {
+            page1 = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertEqual(page1, FoosModel.Presets.foos3)
+        var pageNil: FoosModel?
+        do {
+            pageNil = try await pageIterator.next()
+        } catch {
+            XCTFail("pageStream threw error")
+        }
+        XCTAssertNil(pageNil)
     }
 }

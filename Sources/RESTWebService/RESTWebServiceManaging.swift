@@ -6,13 +6,10 @@
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
-import Combine
-
-public protocol RESTWebServiceManaging {
+public protocol RESTWebServiceManaging: Actor {
 
     func get<M>(with resource: RESTResource<M>) async throws -> M
 
-    func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt) -> AnyPublisher<[M], Error>
-
-    func multipageGetter<M: Pageable>(with initialResource: RESTResource<M>) -> MultipageGetter<M>
+    func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
+                                 safetyLimit: UInt?) -> AsyncThrowingStream<M, Error>
 }
