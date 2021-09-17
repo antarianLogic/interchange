@@ -16,13 +16,13 @@ public actor RESTWebServiceManager {
         self.session = session
     }
 
-    nonisolated let baseURL: URL
-    nonisolated let session: URLSession
+    let baseURL: URL
+    let session: URLSession
 }
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
 
-    public func get<M>(with resource: RESTResource<M>) async throws -> M {
+    public nonisolated func get<M>(with resource: RESTResource<M>) async throws -> M {
 
         let request = try buildRequest(with: resource)
 
@@ -38,7 +38,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
         return try JSONDecoder().decode(M.self, from: data)
     }
 
-    nonisolated public func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
+    public nonisolated func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
                                                     safetyLimit: UInt? = nil) -> AsyncThrowingStream<M, Error> {
 
         var currentResource = initialResource

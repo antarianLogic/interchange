@@ -16,11 +16,6 @@ final class RESTWebServiceManagerTests: XCTestCase {
         Mock.registerAll()
     }
 
-    func testInit() throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
-        XCTAssertEqual(sut.baseURL.absoluteString, "https://example.com")
-    }
-
     func testGetWithPathParams() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
         let resource = FooBarResources.getFoo(input: "123")

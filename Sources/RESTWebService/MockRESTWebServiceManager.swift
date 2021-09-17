@@ -12,16 +12,18 @@ public actor MockRESTWebServiceManager {
         self.shouldFail = shouldFail
     }
 
-    public var mockData: Any? = nil
+    public func setMockData(_ value: Any?) {
+        mockData = value
+    }
 
-    var shouldFail = false
+    var mockData: Any? = nil
 
-    var arraySubject: AnyObject? = nil
+    let shouldFail: Bool
 }
 
 extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
-    public func get<M>(with resource: RESTResource<M>) async throws -> M {
+    public nonisolated func get<M>(with resource: RESTResource<M>) async throws -> M {
 
         await Task.sleep(10)
 
@@ -29,13 +31,13 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
             throw RESTWebServiceError.httpError(404, "404 Not Found")
         }
 
-        guard let model = mockData as? M else { fatalError() }
+        guard let model = await mockData as? M else { fatalError() }
 
         return model
     }
 
-    public func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
-                                        safetyLimit: UInt? = nil) -> AsyncThrowingStream<M, Error> {
+    public nonisolated func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
+                                                    safetyLimit: UInt? = nil) -> AsyncThrowingStream<M, Error> {
 
         var currentResource = initialResource
         var totalCount: UInt? = nil

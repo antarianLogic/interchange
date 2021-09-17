@@ -8,8 +8,8 @@
 
 public protocol RESTWebServiceManaging: Actor {
 
-    func get<M>(with resource: RESTResource<M>) async throws -> M
+    nonisolated func get<M>(with resource: RESTResource<M>) async throws -> M
 
-    func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
-                                 safetyLimit: UInt?) -> AsyncThrowingStream<M, Error>
+    nonisolated func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
+                                             safetyLimit: UInt?) -> AsyncThrowingStream<M, Error>
 }
