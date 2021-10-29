@@ -7,77 +7,75 @@
 //
 
 import Foundation
-import Combine
 
-public final class RESTWebServiceManager {
+public actor RESTWebServiceManager {
 
-    public required init(baseURL: URL,
-                         session: URLSession = URLSession.shared) {
+    public init(baseURL: URL,
+                session: URLSession = URLSession.shared) {
         self.baseURL = baseURL
         self.session = session
     }
 
     let baseURL: URL
     let session: URLSession
-
-    var cancellable: AnyCancellable?
 }
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
 
-    public func get<M>(with resource: RESTResource<M>) -> AnyPublisher<M, RESTWebServiceError> {
+    public nonisolated func get<M>(with resource: RESTResource<M>) async throws -> M {
 
-        // NOTE: It may seem weird to do an Empty first then prepending the resource instead of just starting with a
-        // Just(resource), but doing the later caused random test failures due to the Just sometimes prematurely
-        // finishing before the flatMap publisher could kick in on the utility queue.
-        return Empty(completeImmediately: false)
-            .receive(on: DispatchQueue.global(qos: .utility))
-            .prepend(resource)
-            .setFailureType(to: RESTWebServiceError.self)
-            .tryMap(buildRequest)
-            .mapError(RESTWebServiceError.errorMapper)
-            .flatMap(maxPublishers: .max(1), buildModelPublisher)
-            .first()
-            .eraseToAnyPublisher()
-    }
+        let request = try buildRequest(with: resource)
 
-    public func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt = 0) -> AnyPublisher<[M], RESTWebServiceError> {
-        let subject = PassthroughSubject<[M], RESTWebServiceError>()
-        let getter = multipageGetter(with: resource)
-        var models: [M] = []
-        cancellable = getter.publisher
-            .sink { [weak self] completion in
-                switch completion {
-                case .finished:
-                    subject.send(models)
-                case let .failure(error):
-                    if case .safetyLimitReached = error {
-                        subject.send(models)
-                    }
-                }
-                subject.send(completion: completion)
-                self?.cancellable = nil
-            } receiveValue: { receivedModel in
-                models.append(receivedModel)
-                if !getter.receivedAllPages {
-                    if safetyLimit > 0 {
-                        guard getter.receivedCount < safetyLimit else { getter.safetyLimitReached(); return }
-                    }
-                    getter.getNextPage()
-                }
+        let (data, response) = try await session.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse {
+            guard httpResponse.statusCode >= 200 && httpResponse.statusCode < 204 else {
+                let errorString = String(data: data.prefix(1024), encoding: .utf8) ?? ""
+                throw RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
             }
-        getter.getNextPage()
-        return subject.eraseToAnyPublisher()
+        }
+
+        return try JSONDecoder().decode(M.self, from: data)
     }
 
-    public func multipageGetter<M: Pageable>(with initialResource: RESTResource<M>) -> MultipageGetter<M> {
-        return MultipageGetter(initialResource: initialResource, manager: self)
+    public nonisolated func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
+                                                    safetyLimit: UInt? = nil) -> AsyncThrowingStream<M, Error> {
+
+        var currentResource = initialResource
+        var totalCount: UInt? = nil
+        var receivedCount: UInt = 0
+
+        return AsyncThrowingStream { [weak self] in
+            guard let strongSelf = self else { return nil }
+
+            if let uSafetyLimit = safetyLimit {
+                guard receivedCount < uSafetyLimit else { throw RESTWebServiceError.safetyLimitReached }
+            }
+
+            if let uTotalCount = totalCount {
+                // not first pass
+                guard receivedCount < uTotalCount else { return nil }
+
+                guard let newResource = currentResource.nextPageResource(at: receivedCount) else {
+                    throw RESTWebServiceError.invalidRESTResource
+                }
+
+                currentResource = newResource
+            }
+            let model = try await strongSelf.get(with: currentResource)
+
+            try Task.checkCancellation()
+
+            totalCount = model.totalCount
+            receivedCount += UInt(model.submodels.count)
+            return model
+        }
     }
 }
 
 extension RESTWebServiceManager {
 
-    func buildRequest<M>(with resource: RESTResource<M>) throws -> URLRequest {
+    nonisolated func buildRequest<M>(with resource: RESTResource<M>) throws -> URLRequest {
 
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
@@ -127,26 +125,5 @@ extension RESTWebServiceManager {
         }
 
         return request
-    }
-
-    func buildModelPublisher<M: Decodable>(with request: URLRequest) -> AnyPublisher<M, RESTWebServiceError> {
-        return session.dataTaskPublisher(for: request)
-            .tryFilter(filterOutput)
-            .map(\.data)
-            .decode(type: M.self, decoder: JSONDecoder())
-            .mapError(RESTWebServiceError.errorMapper)
-            .eraseToAnyPublisher()
-    }
-
-    func filterOutput(data: Data, response: URLResponse) throws -> Bool {
-        guard let httpResponse = response as? HTTPURLResponse else { return false }
-
-        let isIncluded = httpResponse.statusCode >= 200 && httpResponse.statusCode < 204
-        guard isIncluded else {
-            let errorString = String(data: data.prefix(128), encoding: .utf8) ?? ""
-            throw RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
-        }
-
-        return isIncluded
     }
 }

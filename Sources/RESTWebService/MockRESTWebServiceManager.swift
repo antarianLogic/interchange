@@ -6,75 +6,67 @@
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
-import Foundation
-import Combine
+public actor MockRESTWebServiceManager {
 
-public final class MockRESTWebServiceManager {
-
-    public required init(shouldFail: Bool = false) {
+    public init(shouldFail: Bool = false) {
         self.shouldFail = shouldFail
     }
 
-    public var mockData: Any? = nil
+    public func setMockData(_ value: Any?) {
+        mockData = value
+    }
 
-    var shouldFail = false
+    var mockData: Any? = nil
 
-    var singleSubject: AnyObject? = nil
-    var arraySubject: AnyObject? = nil
+    let shouldFail: Bool
 }
 
 extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
-    public func get<M>(with resource: RESTResource<M>) -> AnyPublisher<M, RESTWebServiceError> {
-        let subject = PassthroughSubject<M, RESTWebServiceError>()
-        singleSubject = subject
-        if shouldFail {
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                let error = RESTWebServiceError.httpError(404, "404 Not Found")
-                subject.send(completion: .failure(error))
-            }
-        } else {
-            guard let model = mockData as? M else { fatalError() }
+    public nonisolated func get<M>(with resource: RESTResource<M>) async throws -> M {
 
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                subject.send(model)
-                DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                    subject.send(completion: .finished)
-                }
-            }
+        await Task.sleep(10)
+
+        guard !shouldFail else {
+            throw RESTWebServiceError.httpError(404, "404 Not Found")
         }
-        return subject
-            .receive(on: DispatchQueue.global(qos: .utility))
-            .eraseToAnyPublisher()
+
+        guard let model = await mockData as? M else { fatalError() }
+
+        return model
     }
 
-    public func getAllPages<M: Pageable>(with resource: RESTResource<M>, safetyLimit: UInt) -> AnyPublisher<[M], RESTWebServiceError> {
-        let subject = PassthroughSubject<[M], RESTWebServiceError>()
-        arraySubject = subject
-        if shouldFail {
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                let error = RESTWebServiceError.httpError(404, "404 Not Found")
-                subject.send(completion: .failure(error))
-            }
-        } else {
-            guard let model = mockData as? [M] else { fatalError() }
+    public nonisolated func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
+                                                    safetyLimit: UInt? = nil) -> AsyncThrowingStream<M, Error> {
 
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                subject.send(model)
-                DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                    subject.send(model)
-                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(100)) {
-                        subject.send(completion: .finished)
-                    }
+        var currentResource = initialResource
+        var totalCount: UInt? = nil
+        var receivedCount: UInt = 0
+
+        return AsyncThrowingStream { [weak self] in
+            guard let strongSelf = self else { return nil }
+
+            if let uSafetyLimit = safetyLimit {
+                guard receivedCount < uSafetyLimit else { throw RESTWebServiceError.safetyLimitReached }
+            }
+
+            if let uTotalCount = totalCount {
+                // not first pass
+                guard receivedCount < uTotalCount else { return nil }
+
+                guard let newResource = currentResource.nextPageResource(at: receivedCount) else {
+                    throw RESTWebServiceError.invalidRESTResource
                 }
-            }
-        }
-        return subject
-            .receive(on: DispatchQueue.global(qos: .utility))
-            .eraseToAnyPublisher()
-    }
 
-    public func multipageGetter<M: Pageable>(with initialResource: RESTResource<M>) -> MultipageGetter<M> {
-        return MultipageGetter(initialResource: initialResource, manager: self)
+                currentResource = newResource
+            }
+            let model = try await strongSelf.get(with: currentResource)
+
+            try Task.checkCancellation()
+
+            totalCount = model.totalCount
+            receivedCount += UInt(model.submodels.count)
+            return model
+        }
     }
 }
