@@ -3,7 +3,7 @@
 //  RESTWebService
 //  
 //  Created by Carl Sheppard on 2/5/21.
-//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
 public protocol Pageable {

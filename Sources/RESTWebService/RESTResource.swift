@@ -3,12 +3,14 @@
 //  RESTWebService
 //
 //  Created by Carl Sheppard on 1/15/21.
-//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
 import Foundation
 
-public struct RESTResource<Model: Codable> {
+public struct RESTResource {
+
+    public let method: RESTMethod
 
     public let path: String
 
@@ -16,7 +18,7 @@ public struct RESTResource<Model: Codable> {
 
     public let queryParameters: [URLQueryItem]
 
-    public let model: Model?
+    public let bodyParameters: [URLQueryItem]
 
     public let pageSizeQueryItem: URLQueryItem?
 
@@ -28,19 +30,21 @@ public struct RESTResource<Model: Codable> {
 
     public let timeoutInterval: TimeInterval?
 
-    public init(path: String,
+    public init(method: RESTMethod = .get,
+                path: String,
                 headers: [String : String] = [:],
                 queryParameters: [URLQueryItem] = [],
-                model: Model? = nil,
+                bodyParameters: [URLQueryItem] = [],
                 pageSizeQueryItem: URLQueryItem? = nil,
                 offsetQueryItem: URLQueryItem? = nil,
                 pageQueryItem: URLQueryItem? = nil,
                 cacheInterval: TimeInterval? = nil,
                 timeoutInterval: TimeInterval? = nil) {
+        self.method = method
         self.path = path
         self.headers = headers
         self.queryParameters = queryParameters
-        self.model = model
+        self.bodyParameters = bodyParameters
         self.pageSizeQueryItem = pageSizeQueryItem
         self.offsetQueryItem = offsetQueryItem
         self.pageQueryItem = pageQueryItem
@@ -49,7 +53,7 @@ public struct RESTResource<Model: Codable> {
     }
 }
 
-extension RESTResource: Equatable where Model: Equatable {}
+extension RESTResource: Equatable {}
 
 public extension RESTResource {
 
@@ -79,13 +83,15 @@ public extension RESTResource {
 
         if let validOffsetQueryItem = offsetQueryItem {
             let newOffsetQueryItem = URLQueryItem(name: validOffsetQueryItem.name, value: String(newOffset))
-            return RESTResource(path: path, headers: headers, queryParameters: queryParameters, model: model,
+            return RESTResource(method: method, path: path, headers: headers, queryParameters: queryParameters,
+                                bodyParameters: bodyParameters,
                                 pageSizeQueryItem: pageSizeQueryItem, offsetQueryItem: newOffsetQueryItem,
                                 cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)
         } else if let validPageQueryItem = pageQueryItem {
             let newPage = (newOffset / validPageSize) + 1
             let newPageQueryItem = URLQueryItem(name: validPageQueryItem.name, value: String(newPage))
-            return RESTResource(path: path, headers: headers, queryParameters: queryParameters, model: model,
+            return RESTResource(method: method, path: path, headers: headers, queryParameters: queryParameters,
+                                bodyParameters: bodyParameters,
                                 pageSizeQueryItem: pageSizeQueryItem, pageQueryItem: newPageQueryItem,
                                 cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)
         } else {

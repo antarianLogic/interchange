@@ -3,7 +3,7 @@
 //  RESTWebServiceTests
 //
 //  Created by Carl Sheppard on 2/13/21.
-//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
 import Foundation
@@ -35,6 +35,7 @@ extension String {
         case foos4 = "/foos?pageSize=2&page=1"
         case foos5 = "/foos?pageSize=2&page=2"
         case foos6 = "/foos?pageSize=3&page=1"
+        case f00 = "/foo"
     }
 
     enum FullURLPresets {
@@ -47,6 +48,7 @@ extension String {
         static let foos5 = BaseURLPresets.base + PathPresets.foos5.rawValue
         static let foos6 = BaseURLPresets.base + PathPresets.foos6.rawValue
         static let invalid = BaseURLPresets.invalid + PathPresets.foo.rawValue
+        static let f00 = BaseURLPresets.base + PathPresets.f00.rawValue
     }
 
     enum JSONPresets: String, CaseIterable {

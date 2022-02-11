@@ -3,7 +3,7 @@
 //  RESTWebService
 //
 //  Created by Carl Sheppard on 1/29/21.
-//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
 public actor MockRESTWebServiceManager {
@@ -23,9 +23,9 @@ public actor MockRESTWebServiceManager {
 
 extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
-    public nonisolated func get<M>(with resource: RESTResource<M>) async throws -> M {
+    public nonisolated func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
 
-        await Task.sleep(10)
+        try await Task.sleep(nanoseconds: 10)
 
         guard !shouldFail else {
             throw RESTWebServiceError.httpError(404, "404 Not Found")
@@ -36,8 +36,8 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         return model
     }
 
-    public nonisolated func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
-                                                    safetyLimit: UInt? = nil) -> AsyncThrowingStream<M, Error> {
+    public nonisolated func pageStream<M>(with initialResource: RESTResource,
+                                          safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable {
 
         var currentResource = initialResource
         var totalCount: UInt? = nil
@@ -60,7 +60,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
                 currentResource = newResource
             }
-            let model = try await strongSelf.get(with: currentResource)
+            let model: M = try await strongSelf.sendRequest(with: currentResource)
 
             try Task.checkCancellation()
 

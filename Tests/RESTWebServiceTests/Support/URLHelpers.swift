@@ -3,7 +3,7 @@
 //  RESTWebServiceTests
 //
 //  Created by Carl Sheppard on 2/13/21.
-//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
 import Foundation
@@ -26,5 +26,6 @@ extension URL {
         static let foos5 = URL(string: String.FullURLPresets.foos5)!
         static let foos6 = URL(string: String.FullURLPresets.foos6)!
         static let invalid = URL(string: String.FullURLPresets.invalid)!
+        static let f00 = URL(string: String.FullURLPresets.f00)!
     }
 }

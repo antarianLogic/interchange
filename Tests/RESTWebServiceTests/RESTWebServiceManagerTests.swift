@@ -3,7 +3,7 @@
 //  RESTWebServiceTests
 //
 //  Created by Carl Sheppard on 1/15/21.
-//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
 import XCTest
@@ -19,23 +19,30 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testGetWithPathParams() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
         let resource = FooBarResources.getFoo(input: "123")
-        let model = try await sut.get(with: resource)
+        let model: FooModel = try await sut.sendRequest(with: resource)
         XCTAssertEqual(model, FooModel.Presets.foo)
     }
 
     func testGetWithQueryParams() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let resource = FooBarResources.getBar(inputs: ["234", "345"])
-        let model = try await sut.get(with: resource)
+        let model: BarModel = try await sut.sendRequest(with: resource)
         XCTAssertEqual(model, BarModel.Presets.bar)
+    }
+
+    func testPutWithBodyParams() async throws {
+        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let resource = FooBarResources.putFoo()
+        let model: FooModel = try await sut.sendRequest(with: resource)
+        XCTAssertEqual(model, FooModel.Presets.foo)
     }
 
     func testHTTPError() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.invalid)
         let resource = FooBarResources.getFoo(input: "123")
         do {
-            let _ = try await sut.get(with: resource)
-            XCTFail("get unexpectedly returned value")
+            let _: FooModel = try await sut.sendRequest(with: resource)
+            XCTFail("sendRequest unexpectedly returned value")
         } catch {
             XCTAssertNotNil(error)
         }
@@ -48,7 +55,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let resource = FooBarResources.getFoos()
         var models: [FoosModel] = []
         do {
-            for try await page in sut.pageStream(with: resource) {
+            for try await page: FoosModel in sut.pageStream(with: resource) {
                 models.append(page)
             }
         } catch {
@@ -65,7 +72,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         var models: [FoosModel] = []
         var theError: Error!
         do {
-            for try await page in sut.pageStream(with: resource, safetyLimit: 1) {
+            for try await page: FoosModel in sut.pageStream(with: resource, safetyLimit: 1) {
                 models.append(page)
             }
         } catch {
@@ -95,6 +102,16 @@ final class RESTWebServiceManagerTests: XCTestCase {
                                                       "User-Agent": "Foo/1.0.0 (bar@example.com)"])
     }
 
+    func testBuildRequestWithBodyParams() throws {
+        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let resource = FooBarResources.putFoo()
+        let request = try? sut.buildRequest(with: resource)
+        XCTAssertEqual(request?.url?.absoluteString, "https://example.com/foo")
+        XCTAssertEqual(request?.httpMethod, "PUT")
+        XCTAssertEqual(request?.httpBody, Data("body1=body1 value".utf8))
+        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
+    }
+
     func testBuildRequestWithAcceptOverride() throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
         let resource = FooBarResources.getFooXML(input: "456")
@@ -107,7 +124,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testPageStreamIterator() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let resource = FooBarResources.getFoos()
-        let stream = sut.pageStream(with: resource, safetyLimit: 1000)
+        let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: resource, safetyLimit: 1000)
         var page1: FoosModel!
         var pageIterator = stream.makeAsyncIterator()
         do {
@@ -135,7 +152,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testPageStreamIteratorDoneFirstPass() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let resource = FooBarResources.getFoos3()
-        let stream = sut.pageStream(with: resource, safetyLimit: 1000)
+        let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: resource, safetyLimit: 1000)
         var page1: FoosModel!
         var pageIterator = stream.makeAsyncIterator()
         do {
@@ -156,7 +173,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testPageStreamIteratorWithPageQueryItem() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let resource = FooBarResources.getFoos4()
-        let stream = sut.pageStream(with: resource, safetyLimit: 1000)
+        let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: resource, safetyLimit: 1000)
         var page1: FoosModel!
         var pageIterator = stream.makeAsyncIterator()
         do {
@@ -184,7 +201,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testPageStreamIteratorWithPageQueryItemDoneFirstPass() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let resource = FooBarResources.getFoos6()
-        let stream = sut.pageStream(with: resource, safetyLimit: 1000)
+        let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: resource, safetyLimit: 1000)
         var page1: FoosModel!
         var pageIterator = stream.makeAsyncIterator()
         do {

@@ -3,13 +3,13 @@
 //  RESTWebService
 //
 //  Created by Carl Sheppard on 1/15/21.
-//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
 public protocol RESTWebServiceManaging: Actor {
 
-    nonisolated func get<M>(with resource: RESTResource<M>) async throws -> M
+    nonisolated func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable
 
-    nonisolated func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
-                                             safetyLimit: UInt?) -> AsyncThrowingStream<M, Error>
+    nonisolated func pageStream<M>(with initialResource: RESTResource,
+                                   safetyLimit: UInt?) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable
 }

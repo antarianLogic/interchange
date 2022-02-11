@@ -3,10 +3,11 @@
 //  RESTWebService
 //
 //  Created by Carl Sheppard on 1/15/21.
-//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
 import Foundation
+import DateUtils
 
 public actor RESTWebServiceManager {
 
@@ -22,7 +23,7 @@ public actor RESTWebServiceManager {
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
 
-    public nonisolated func get<M>(with resource: RESTResource<M>) async throws -> M {
+    public nonisolated func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
 
         let request = try buildRequest(with: resource)
 
@@ -38,8 +39,8 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
         return try JSONDecoder().decode(M.self, from: data)
     }
 
-    public nonisolated func pageStream<M: Pageable>(with initialResource: RESTResource<M>,
-                                                    safetyLimit: UInt? = nil) -> AsyncThrowingStream<M, Error> {
+    public nonisolated func pageStream<M>(with initialResource: RESTResource,
+                                          safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable {
 
         var currentResource = initialResource
         var totalCount: UInt? = nil
@@ -62,7 +63,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
 
                 currentResource = newResource
             }
-            let model = try await strongSelf.get(with: currentResource)
+            let model: M = try await strongSelf.sendRequest(with: currentResource)
 
             try Task.checkCancellation()
 
@@ -75,7 +76,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
 
 extension RESTWebServiceManager {
 
-    nonisolated func buildRequest<M>(with resource: RESTResource<M>) throws -> URLRequest {
+    nonisolated func buildRequest(with resource: RESTResource) throws -> URLRequest {
 
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
@@ -102,10 +103,24 @@ extension RESTWebServiceManager {
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = resource.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         for header in resource.headers {
             request.setValue(header.value, forHTTPHeaderField: header.key)
+        }
+
+        if !resource.bodyParameters.isEmpty {
+            var bodyComponents = URLComponents()
+            bodyComponents.queryItems = resource.bodyParameters
+            guard let validQuery = bodyComponents.query else {
+                throw RESTWebServiceError.bodyParametersInvalid(resource.bodyParameters)
+            }
+
+            guard let validData = validQuery.data(using: .utf8) else {
+                throw RESTWebServiceError.bodyStringInvalid(validQuery)
+            }
+
+            request.httpBody = validData
         }
 
         if let cacheInterval = resource.cacheInterval,
