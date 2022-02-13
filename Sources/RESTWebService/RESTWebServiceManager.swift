@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os
 import DateUtils
 
 public actor RESTWebServiceManager {
@@ -19,6 +20,7 @@ public actor RESTWebServiceManager {
 
     let baseURL: URL
     let session: URLSession
+    let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "RESTWebService", category: "Package")
 }
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
@@ -36,7 +38,23 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
             }
         }
 
-        return try JSONDecoder().decode(M.self, from: data)
+        do {
+            return try JSONDecoder().decode(M.self, from: data)
+        } catch let decodingError as DecodingError {
+            switch decodingError {
+            case let .typeMismatch(type, context):
+                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, \(type) type mismatch – \(String(reflecting: context), privacy: .public)")
+            case let .valueNotFound(type, context):
+                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing \(type) value – \(String(reflecting: context), privacy: .public)")
+            case let .keyNotFound(key, context):
+                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing key '\(key.stringValue, privacy: .public)' not found – \(String(reflecting: context), privacy: .public)")
+            case let .dataCorrupted(context):
+                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, invalid JSON = \(String(reflecting: context), privacy: .public)")
+            @unknown default:
+                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, unknown error: \(String(reflecting: decodingError), privacy: .public)")
+            }
+            throw decodingError
+        }
     }
 
     public nonisolated func pageStream<M>(with initialResource: RESTResource,
