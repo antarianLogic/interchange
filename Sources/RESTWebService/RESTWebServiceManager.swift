@@ -34,7 +34,9 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
         if let httpResponse = response as? HTTPURLResponse {
             guard httpResponse.statusCode >= 200 && httpResponse.statusCode < 204 else {
                 let errorString = String(data: data.prefix(1024), encoding: .utf8) ?? ""
-                throw RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
+                let error = RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
+                logger.warning("In RESTWebServiceManager.sendRequest, HTTP error with status code: \(httpResponse.statusCode) – \(errorString, privacy: .public)")
+                throw error
             }
         }
 
