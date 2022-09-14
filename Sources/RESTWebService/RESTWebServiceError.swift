@@ -19,6 +19,31 @@ public enum RESTWebServiceError: Error {
     case safetyLimitReached
 }
 
+extension RESTWebServiceError: Equatable {
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidRESTResource, .invalidRESTResource):
+            return true
+        case let (.invalidBaseURL(lhsURLString), .invalidBaseURL(rhsURLString)):
+            return lhsURLString == rhsURLString
+        case let (.insufficientURLComponents(lhsComponentsString), .insufficientURLComponents(rhsComponentsString)):
+            return lhsComponentsString == rhsComponentsString
+        case let (.bodyParametersInvalid(lhsBodyParameters), .bodyParametersInvalid(rhsBodyParameters)):
+            return lhsBodyParameters == rhsBodyParameters
+        case let (.bodyStringInvalid(lhsBodyString), .bodyStringInvalid(rhsBodyString)):
+            return lhsBodyString == rhsBodyString
+        case let (.httpError(lhsStatusCode, lhsErrorString), .httpError(rhsStatusCode, rhsErrorString)):
+            return lhsStatusCode == rhsStatusCode &&
+                   lhsErrorString == rhsErrorString
+        case (.safetyLimitReached, .safetyLimitReached):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
 extension RESTWebServiceError: CustomDebugStringConvertible {
 
     public var debugDescription: String {
