@@ -23,7 +23,7 @@ public actor MockRESTWebServiceManager {
 
 extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
-    public nonisolated func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
+    public func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
 
         try await Task.sleep(nanoseconds: 10)
 
@@ -31,7 +31,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
             throw RESTWebServiceError.httpError(404, "404 Not Found")
         }
 
-        guard let model = await mockData as? M else { fatalError() }
+        guard let model = mockData as? M else { fatalError() }
 
         return model
     }

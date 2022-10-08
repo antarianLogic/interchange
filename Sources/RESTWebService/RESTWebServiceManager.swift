@@ -9,23 +9,27 @@
 import Foundation
 import os
 import DateUtils
+import ALTelemetryProtocol
 
 public actor RESTWebServiceManager {
 
     public init(baseURL: URL,
-                session: URLSession = URLSession.shared) {
+                session: URLSession = URLSession.shared,
+                telemetryInteractor: TelemetryInteracting = DummyTelemetryInteractor()) {
         self.baseURL = baseURL
         self.session = session
+        self.telemetryInteractor = telemetryInteractor
     }
 
     let baseURL: URL
     let session: URLSession
+    let telemetryInteractor: TelemetryInteracting
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "RESTWebService", category: "Package")
 }
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
 
-    public nonisolated func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
+    public func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
 
         let request = try buildRequest(with: resource)
 
@@ -36,6 +40,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
                 let errorString = String(data: data.prefix(1024), encoding: .utf8) ?? ""
                 let error = RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
                 logger.warning("In RESTWebServiceManager.sendRequest, HTTP error with status code: \(httpResponse.statusCode) – \(errorString, privacy: .public)")
+                // don't send out telemetry here, we can't do anything about this error
                 throw error
             }
         }
@@ -43,23 +48,51 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
         do {
             return try JSONDecoder().decode(M.self, from: data)
         } catch let decodingError as DecodingError {
+            let failingURL = request.url?.absoluteString ?? ""
             switch decodingError {
             case let .typeMismatch(type, context):
+                let codingPath = context.codingPath.map { $0.stringValue }
+                let codingPathString = codingPath.joined(separator: ".")
                 logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, \(type) type mismatch – \(String(reflecting: context), privacy: .public)")
+                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                    with: ["url" : failingURL,
+                                                           "reason" : "\(type) type mismatch",
+                                                           "codingPath" : codingPathString])
             case let .valueNotFound(type, context):
+                let codingPath = context.codingPath.map { $0.stringValue }
+                let codingPathString = codingPath.joined(separator: ".")
                 logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing \(type) value – \(String(reflecting: context), privacy: .public)")
+                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                    with: ["url" : failingURL,
+                                                           "reason" : "missing \(type) value",
+                                                           "codingPath" : codingPathString])
             case let .keyNotFound(key, context):
+                let codingPath = context.codingPath.map { $0.stringValue }
+                let codingPathString = codingPath.joined(separator: ".")
                 logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing key '\(key.stringValue, privacy: .public)' not found – \(String(reflecting: context), privacy: .public)")
+                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                    with: ["url" : failingURL,
+                                                           "reason" : "missing key: \(key.stringValue)",
+                                                           "codingPath" : codingPathString])
             case let .dataCorrupted(context):
+                let codingPath = context.codingPath.map { $0.stringValue }
+                let codingPathString = codingPath.joined(separator: ".")
                 logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, invalid JSON = \(String(reflecting: context), privacy: .public)")
+                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                    with: ["url" : failingURL,
+                                                           "reason" : "invalid JSON",
+                                                           "codingPath" : codingPathString])
             @unknown default:
                 logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, unknown error: \(String(reflecting: decodingError), privacy: .public)")
+                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                    with: ["url" : failingURL,
+                                                           "reason" : "unknown"])
             }
             throw decodingError
         }
     }
 
-    public nonisolated func pageStream<M>(with initialResource: RESTResource,
+    nonisolated public func pageStream<M>(with initialResource: RESTResource,
                                           safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable {
 
         var currentResource = initialResource
@@ -70,7 +103,14 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
             guard let strongSelf = self else { return nil }
 
             if let uSafetyLimit = safetyLimit {
-                guard receivedCount < uSafetyLimit else { throw RESTWebServiceError.safetyLimitReached }
+                guard receivedCount < uSafetyLimit else {
+                    let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentResource.path)"
+                    strongSelf.logger.warning("In RESTWebServiceManager.pageStream, safety limit reached for URL: \(failingURL, privacy: .public)")
+                    strongSelf.telemetryInteractor.sendAnonymously(signalType: "restWebServiceError",
+                                                                   with: ["url" : failingURL,
+                                                                          "reason" : "safety limit reached"])
+                    throw RESTWebServiceError.safetyLimitReached
+                }
             }
 
             if let uTotalCount = totalCount {
@@ -78,6 +118,11 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
                 guard receivedCount < uTotalCount else { return nil }
 
                 guard let newResource = currentResource.nextPageResource(at: receivedCount) else {
+                    let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentResource.path)"
+                    strongSelf.logger.warning("In RESTWebServiceManager.pageStream, invalid next page resource for URL: \(failingURL, privacy: .public)")
+                    strongSelf.telemetryInteractor.sendAnonymously(signalType: "restWebServiceError",
+                                                                   with: ["url" : failingURL,
+                                                                          "reason" : "invalid next page resource"])
                     throw RESTWebServiceError.invalidRESTResource
                 }
 
@@ -96,11 +141,14 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
 
 extension RESTWebServiceManager {
 
-    nonisolated func buildRequest(with resource: RESTResource) throws -> URLRequest {
+    func buildRequest(with resource: RESTResource) throws -> URLRequest {
 
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
-            throw RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
+            let error = RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
+            logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
+            // don't send out telemetry here, this would be a pure programming error that would likely be found early
+            throw error
         }
 
         validComponents.path = validComponents.path.appending(resource.path)
@@ -119,7 +167,10 @@ extension RESTWebServiceManager {
         }
 
         guard let url = validComponents.url else {
-            throw RESTWebServiceError.insufficientURLComponents(validComponents.description)
+            let error = RESTWebServiceError.insufficientURLComponents(validComponents.description)
+            logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
+            // don't send out telemetry here, this would be a pure programming error that would likely be found early
+            throw error
         }
 
         var request = URLRequest(url: url)
@@ -133,11 +184,17 @@ extension RESTWebServiceManager {
             var bodyComponents = URLComponents()
             bodyComponents.queryItems = resource.bodyParameters
             guard let validQuery = bodyComponents.query else {
-                throw RESTWebServiceError.bodyParametersInvalid(resource.bodyParameters)
+                let error = RESTWebServiceError.bodyParametersInvalid(resource.bodyParameters)
+                logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
+                // don't send out telemetry here, this would be a pure programming error that would likely be found early
+                throw error
             }
 
             guard let validData = validQuery.data(using: .utf8) else {
-                throw RESTWebServiceError.bodyStringInvalid(validQuery)
+                let error = RESTWebServiceError.bodyStringInvalid(validQuery)
+                logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
+                // don't send out telemetry here, this would be a pure programming error that would likely be found early
+                throw error
             }
 
             request.httpBody = validData

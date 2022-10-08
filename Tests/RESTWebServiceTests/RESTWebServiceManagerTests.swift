@@ -83,39 +83,39 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertNotNil(theError)
     }
 
-    func testBuildRequestWithPathParams() throws {
+    func testBuildRequestWithPathParams() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
         let resource = FooBarResources.getFoo(input: "123")
-        let request = try? sut.buildRequest(with: resource)
+        let request = try? await sut.buildRequest(with: resource)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/subpath/foo/123")
         XCTAssertEqual(request?.httpMethod, "GET")
         XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
     }
 
-    func testBuildRequestWithQueryParams() throws {
+    func testBuildRequestWithQueryParams() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let resource = FooBarResources.getBar(inputs: ["234","345"])
-        let request = try? sut.buildRequest(with: resource)
+        let request = try? await sut.buildRequest(with: resource)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/bar?inputs=234,345")
         XCTAssertEqual(request?.httpMethod, "GET")
         XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json",
                                                       "User-Agent": "Foo/1.0.0 (bar@example.com)"])
     }
 
-    func testBuildRequestWithBodyParams() throws {
+    func testBuildRequestWithBodyParams() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let resource = FooBarResources.putFoo()
-        let request = try? sut.buildRequest(with: resource)
+        let request = try? await sut.buildRequest(with: resource)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/foo")
         XCTAssertEqual(request?.httpMethod, "PUT")
         XCTAssertEqual(request?.httpBody, Data("body1=body1 value".utf8))
         XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
     }
 
-    func testBuildRequestWithAcceptOverride() throws {
+    func testBuildRequestWithAcceptOverride() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
         let resource = FooBarResources.getFooXML(input: "456")
-        let request = try? sut.buildRequest(with: resource)
+        let request = try? await sut.buildRequest(with: resource)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/subpath/foo/456")
         XCTAssertEqual(request?.httpMethod, "GET")
         XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/xml"])

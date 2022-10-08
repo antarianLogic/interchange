@@ -14,14 +14,16 @@ let package = Package(
             targets: ["RESTWebService"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/WeTransfer/Mocker.git", from: "2.5.0"),
-        .package(url: "https://github.com/antarianLogic/date-utils.git", from: "0.2.0")
+        .package(url: "https://github.com/WeTransfer/Mocker.git", from: "2.7.0"),
+        .package(url: "https://github.com/antarianLogic/date-utils.git", from: "0.2.0"),
+        .package(url: "https://github.com/antarianLogic/al-telemetry.git", from: "1.0.2")
     ],
     targets: [
         .target(
             name: "RESTWebService",
             dependencies: [
-                .product(name: "DateUtils", package: "date-utils")]
+                .product(name: "DateUtils", package: "date-utils"),
+                .product(name: "ALTelemetryProtocol", package: "al-telemetry")]
         ),
         .testTarget(
             name: "RESTWebServiceTests",
