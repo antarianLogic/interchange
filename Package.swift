@@ -14,7 +14,7 @@ let package = Package(
             targets: ["RESTWebService"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/WeTransfer/Mocker.git", from: "2.7.0"),
+        .package(url: "https://github.com/WeTransfer/Mocker.git", from: "3.0.0"),
         .package(url: "https://github.com/antarianLogic/date-utils.git", from: "0.2.0"),
         .package(url: "https://github.com/antarianLogic/al-telemetry.git", from: "1.0.3")
     ],

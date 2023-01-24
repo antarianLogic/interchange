@@ -49,45 +49,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
             return try JSONDecoder().decode(M.self, from: data)
         } catch let decodingError as DecodingError {
             let failingURL = request.url?.absoluteString ?? ""
-            switch decodingError {
-            case let .typeMismatch(type, context):
-                let codingPath = context.codingPath.map { $0.stringValue }
-                let codingPathString = codingPath.joined(separator: ".")
-                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, \(type) type mismatch – \(String(reflecting: context), privacy: .public)")
-                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                    with: ["url" : failingURL,
-                                                           "reason" : "\(type) type mismatch",
-                                                           "codingPath" : codingPathString])
-            case let .valueNotFound(type, context):
-                let codingPath = context.codingPath.map { $0.stringValue }
-                let codingPathString = codingPath.joined(separator: ".")
-                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing \(type) value – \(String(reflecting: context), privacy: .public)")
-                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                    with: ["url" : failingURL,
-                                                           "reason" : "missing \(type) value",
-                                                           "codingPath" : codingPathString])
-            case let .keyNotFound(key, context):
-                let codingPath = context.codingPath.map { $0.stringValue }
-                let codingPathString = codingPath.joined(separator: ".")
-                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing key '\(key.stringValue, privacy: .public)' not found – \(String(reflecting: context), privacy: .public)")
-                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                    with: ["url" : failingURL,
-                                                           "reason" : "missing key: \(key.stringValue)",
-                                                           "codingPath" : codingPathString])
-            case let .dataCorrupted(context):
-                let codingPath = context.codingPath.map { $0.stringValue }
-                let codingPathString = codingPath.joined(separator: ".")
-                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, invalid JSON = \(String(reflecting: context), privacy: .public)")
-                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                    with: ["url" : failingURL,
-                                                           "reason" : "invalid JSON",
-                                                           "codingPath" : codingPathString])
-            @unknown default:
-                logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, unknown error: \(String(reflecting: decodingError), privacy: .public)")
-                telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                    with: ["url" : failingURL,
-                                                           "reason" : "unknown"])
-            }
+            logDecodingError(decodingError: decodingError, urlString: failingURL)
             throw decodingError
         }
     }
@@ -217,5 +179,47 @@ extension RESTWebServiceManager {
         }
 
         return request
+    }
+
+    func logDecodingError(decodingError: DecodingError, urlString: String) {
+        switch decodingError {
+        case let .typeMismatch(type, context):
+            let codingPath = context.codingPath.map { $0.stringValue }
+            let codingPathString = codingPath.joined(separator: ".")
+            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, \(type) type mismatch – \(String(reflecting: context), privacy: .public)")
+            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                with: ["url" : urlString,
+                                                       "reason" : "\(type) type mismatch",
+                                                       "codingPath" : codingPathString])
+        case let .valueNotFound(type, context):
+            let codingPath = context.codingPath.map { $0.stringValue }
+            let codingPathString = codingPath.joined(separator: ".")
+            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing \(type) value – \(String(reflecting: context), privacy: .public)")
+            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                with: ["url" : urlString,
+                                                       "reason" : "missing \(type) value",
+                                                       "codingPath" : codingPathString])
+        case let .keyNotFound(key, context):
+            let codingPath = context.codingPath.map { $0.stringValue }
+            let codingPathString = codingPath.joined(separator: ".")
+            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing key '\(key.stringValue, privacy: .public)' not found – \(String(reflecting: context), privacy: .public)")
+            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                with: ["url" : urlString,
+                                                       "reason" : "missing key: \(key.stringValue)",
+                                                       "codingPath" : codingPathString])
+        case let .dataCorrupted(context):
+            let codingPath = context.codingPath.map { $0.stringValue }
+            let codingPathString = codingPath.joined(separator: ".")
+            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, invalid JSON = \(String(reflecting: context), privacy: .public)")
+            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                with: ["url" : urlString,
+                                                       "reason" : "invalid JSON",
+                                                       "codingPath" : codingPathString])
+        @unknown default:
+            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, unknown error: \(String(reflecting: decodingError), privacy: .public)")
+            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
+                                                with: ["url" : urlString,
+                                                       "reason" : "unknown"])
+        }
     }
 }
