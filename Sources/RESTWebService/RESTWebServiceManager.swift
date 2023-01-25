@@ -11,11 +11,6 @@ import os
 import DateUtils
 import ALTelemetryProtocol
 
-public struct RESTRateLimitHeaders {
-    public let rateLimitKey: String
-    public let rateLimitRemainingKey : String
-}
-
 public actor RESTWebServiceManager {
 
     public init(baseURL: URL,
@@ -267,5 +262,17 @@ extension RESTWebServiceManager {
         let capturedRateLimitRemaining = rateLimitRemaining
         logger.info("In RESTWebServiceManager.performRateLimiting, rateLimit: \(capturedRateLimit), rateLimitRemaining: \(capturedRateLimitRemaining), waiting \(waitNanoseconds) nanoseconds...")
         try? await Task.sleep(nanoseconds: waitNanoseconds)
+    }
+}
+
+public struct RESTRateLimitHeaders {
+
+    public let rateLimitKey: String
+    public let rateLimitRemainingKey : String
+
+    public init(rateLimitKey: String,
+                rateLimitRemainingKey: String) {
+        self.rateLimitKey = rateLimitKey
+        self.rateLimitRemainingKey = rateLimitRemainingKey
     }
 }
