@@ -37,9 +37,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
 
     public func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
 
-        if resource.enableRateLimiting && rateLimit > 0 {
-            await performRateLimiting()
-        }
+        await performRateLimiting()
 
         let request = try buildRequest(with: resource)
 
