@@ -16,6 +16,12 @@ enum FooBarResources {
                             queryParameters: [])
     }
 
+    static func getFoo2(input: String) -> RESTResource {
+        return RESTResource(path: "/foo2/\(input)",
+                            queryParameters: [],
+                            enableRateLimiting: true)
+    }
+
     static func getFooXML(input: String) -> RESTResource {
         return RESTResource(path: "/foo/\(input)",
                             headers: ["Accept": "application/xml"],

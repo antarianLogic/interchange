@@ -30,6 +30,8 @@ public struct RESTResource {
 
     public let timeoutInterval: TimeInterval?
 
+    public let enableRateLimiting: Bool
+
     public init(method: RESTMethod = .get,
                 path: String,
                 headers: [String : String] = [:],
@@ -39,7 +41,8 @@ public struct RESTResource {
                 offsetQueryItem: URLQueryItem? = nil,
                 pageQueryItem: URLQueryItem? = nil,
                 cacheInterval: TimeInterval? = nil,
-                timeoutInterval: TimeInterval? = nil) {
+                timeoutInterval: TimeInterval? = nil,
+                enableRateLimiting: Bool = false) {
         self.method = method
         self.path = path
         self.headers = headers
@@ -50,6 +53,7 @@ public struct RESTResource {
         self.pageQueryItem = pageQueryItem
         self.cacheInterval = cacheInterval
         self.timeoutInterval = timeoutInterval
+        self.enableRateLimiting = enableRateLimiting
     }
 }
 

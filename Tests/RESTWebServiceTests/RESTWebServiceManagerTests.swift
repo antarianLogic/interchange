@@ -48,6 +48,22 @@ final class RESTWebServiceManagerTests: XCTestCase {
         }
     }
 
+    func testGetWithRateLimiting() async throws {
+        let rateLimitHeaders = RESTRateLimitHeaders(rateLimitKey: "RateLimit",
+                                                    rateLimitRemainingKey: "RateLimitRemaining")
+        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath,
+                                        rateLimitHeaders: rateLimitHeaders)
+        let resource = FooBarResources.getFoo2(input: "456")
+        measure {
+            let exp = expectation(description: "testGetWithRateLimiting")
+            Task {
+                let _: FooModel = try await sut.sendRequest(with: resource)
+                exp.fulfill()
+            }
+            wait(for: [exp], timeout: 1000)
+        }
+    }
+
     // TODO: figure out how to test cacheInterval and timeoutInterval
 
     func testGetAllPages() async throws {
@@ -119,6 +135,18 @@ final class RESTWebServiceManagerTests: XCTestCase {
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/subpath/foo/456")
         XCTAssertEqual(request?.httpMethod, "GET")
         XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/xml"])
+    }
+
+    func testPerformRateLimiting() async throws {
+        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
+        measure {
+            let exp = expectation(description: "testPerformRateLimiting")
+            Task {
+                await sut.performRateLimiting()
+                exp.fulfill()
+            }
+            wait(for: [exp], timeout: 60)
+        }
     }
 
     func testPageStreamIterator() async throws {

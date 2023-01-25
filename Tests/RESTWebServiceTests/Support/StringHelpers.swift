@@ -28,6 +28,7 @@ extension String {
 
     enum PathPresets: String, CaseIterable {
         case foo = "/foo/123"
+        case foo2 = "/foo2/456"
         case bar = "/bar?inputs=234,345"
         case foos1 = "/foos?pageSize=2&offset=0"
         case foos2 = "/foos?pageSize=2&offset=2"
@@ -40,6 +41,7 @@ extension String {
 
     enum FullURLPresets {
         static let foo = BaseURLPresets.subpath + PathPresets.foo.rawValue
+        static let foo2 = BaseURLPresets.subpath + PathPresets.foo2.rawValue
         static let bar = BaseURLPresets.base + PathPresets.bar.rawValue
         static let foos1 = BaseURLPresets.base + PathPresets.foos1.rawValue
         static let foos2 = BaseURLPresets.base + PathPresets.foos2.rawValue

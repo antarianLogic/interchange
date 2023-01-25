@@ -11,31 +11,60 @@ import os
 import DateUtils
 import ALTelemetryProtocol
 
+public struct RESTRateLimitHeaders {
+    public let rateLimitKey: String
+    public let rateLimitRemainingKey : String
+}
+
 public actor RESTWebServiceManager {
 
     public init(baseURL: URL,
                 session: URLSession = URLSession.shared,
+                rateLimitHeaders: RESTRateLimitHeaders? = nil,
                 telemetryInteractor: TelemetryInteracting = DummyTelemetryInteractor()) {
         self.baseURL = baseURL
         self.session = session
+        self.rateLimitHeaders = rateLimitHeaders
         self.telemetryInteractor = telemetryInteractor
     }
 
     let baseURL: URL
     let session: URLSession
+    let rateLimitHeaders: RESTRateLimitHeaders?
     let telemetryInteractor: TelemetryInteracting
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "RESTWebService", category: "Package")
+    var prevRequestTime: Date = .distantPast
+    var rateLimit: UInt64 = 0
+    var rateLimitRemaining: UInt64 = .max
 }
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
 
     public func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
 
+        if resource.enableRateLimiting && rateLimit > 0 {
+            await performRateLimiting()
+        }
+
         let request = try buildRequest(with: resource)
 
+        prevRequestTime = .now
         let (data, response) = try await session.data(for: request)
 
         if let httpResponse = response as? HTTPURLResponse {
+            if let rateLimitHeaders {
+                if let rateLimitString = httpResponse.value(forHTTPHeaderField: rateLimitHeaders.rateLimitKey),
+                   !rateLimitString.isEmpty,
+                   let theRateLimit = UInt64(rateLimitString) {
+                    rateLimit = theRateLimit
+                }
+                if let rateLimitRemainingString = httpResponse.value(forHTTPHeaderField: rateLimitHeaders.rateLimitRemainingKey),
+                   !rateLimitRemainingString.isEmpty,
+                   let theRateLimitRemaining = UInt64(rateLimitRemainingString) {
+                    rateLimitRemaining = theRateLimitRemaining
+                }
+            }
+
             guard httpResponse.statusCode >= 200 && httpResponse.statusCode < 204 else {
                 let errorString = String(data: data.prefix(1024), encoding: .utf8) ?? ""
                 let error = RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
@@ -221,5 +250,22 @@ extension RESTWebServiceManager {
                                                 with: ["url" : urlString,
                                                        "reason" : "unknown"])
         }
+    }
+
+    func performRateLimiting() async {
+        guard rateLimit > 0,
+              rateLimitRemaining >= 0,
+              rateLimitRemaining < rateLimit else { return }
+
+        let waitInterval = TimeInterval(rateLimit) / pow(1.5, Double(rateLimitRemaining))
+        let nextRequestTime = prevRequestTime.addingTimeInterval(waitInterval)
+        let actualWaitInterval = nextRequestTime.timeIntervalSinceNow
+        guard actualWaitInterval > 0 else { return }
+
+        let waitNanoseconds = UInt64(1_000_000_000.0 * actualWaitInterval)
+        let capturedRateLimit = rateLimit
+        let capturedRateLimitRemaining = rateLimitRemaining
+        logger.info("In RESTWebServiceManager.performRateLimiting, rateLimit: \(capturedRateLimit), rateLimitRemaining: \(capturedRateLimitRemaining), waiting \(waitNanoseconds) nanoseconds...")
+        try? await Task.sleep(nanoseconds: waitNanoseconds)
     }
 }

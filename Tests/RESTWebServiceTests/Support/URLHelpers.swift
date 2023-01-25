@@ -18,6 +18,7 @@ extension URL {
 
     enum FullURLPresets {
         static let foo = URL(string: String.FullURLPresets.foo)!
+        static let foo2 = URL(string: String.FullURLPresets.foo2)!
         static let bar = URL(string: String.FullURLPresets.bar)!
         static let foos1 = URL(string: String.FullURLPresets.foos1)!
         static let foos2 = URL(string: String.FullURLPresets.foos2)!
