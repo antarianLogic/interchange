@@ -9,24 +9,20 @@
 import Foundation
 import os
 import DateUtils
-import ALTelemetryProtocol
 
 public actor RESTWebServiceManager {
 
     public init(baseURL: URL,
                 session: URLSession = URLSession.shared,
-                rateLimitHeaders: RESTRateLimitHeaders? = nil,
-                telemetryInteractor: TelemetryInteracting = DummyTelemetryInteractor()) {
+                rateLimitHeaders: RESTRateLimitHeaders? = nil) {
         self.baseURL = baseURL
         self.session = session
         self.rateLimitHeaders = rateLimitHeaders
-        self.telemetryInteractor = telemetryInteractor
     }
 
     let baseURL: URL
     let session: URLSession
     let rateLimitHeaders: RESTRateLimitHeaders?
-    let telemetryInteractor: TelemetryInteracting
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "RESTWebService", category: "Package")
     var prevRequestTime: Date = .distantPast
     var rateLimit: UInt64 = 0
@@ -71,8 +67,8 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
             return try JSONDecoder().decode(M.self, from: data)
         } catch let decodingError as DecodingError {
             let failingURL = request.url?.absoluteString ?? ""
-            logDecodingError(decodingError: decodingError, urlString: failingURL)
-            throw decodingError
+            let error = buildErrorAndLog(decodingError: decodingError, urlString: failingURL)
+            throw error
         }
     }
 
@@ -90,10 +86,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
                 guard receivedCount < uSafetyLimit else {
                     let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentResource.path)"
                     strongSelf.logger.warning("In RESTWebServiceManager.pageStream, safety limit reached for URL: \(failingURL, privacy: .public)")
-                    strongSelf.telemetryInteractor.sendAnonymously(signalType: "restWebServiceError",
-                                                                   with: ["url" : failingURL,
-                                                                          "reason" : "safety limit reached"])
-                    throw RESTWebServiceError.safetyLimitReached
+                    throw RESTWebServiceError.safetyLimitReached(failingURL)
                 }
             }
 
@@ -104,10 +97,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
                 guard let newResource = currentResource.nextPageResource(at: receivedCount) else {
                     let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentResource.path)"
                     strongSelf.logger.warning("In RESTWebServiceManager.pageStream, invalid next page resource for URL: \(failingURL, privacy: .public)")
-                    strongSelf.telemetryInteractor.sendAnonymously(signalType: "restWebServiceError",
-                                                                   with: ["url" : failingURL,
-                                                                          "reason" : "invalid next page resource"])
-                    throw RESTWebServiceError.invalidRESTResource
+                    throw RESTWebServiceError.invalidRESTResource(failingURL)
                 }
 
                 currentResource = newResource
@@ -203,46 +193,35 @@ extension RESTWebServiceManager {
         return request
     }
 
-    func logDecodingError(decodingError: DecodingError, urlString: String) {
+    func buildErrorAndLog(decodingError: DecodingError, urlString: String) -> RESTWebServiceError {
+        var reason: String = ""
+        var codingPathString: String?
         switch decodingError {
         case let .typeMismatch(type, context):
             let codingPath = context.codingPath.map { $0.stringValue }
-            let codingPathString = codingPath.joined(separator: ".")
+            codingPathString = codingPath.joined(separator: ".")
             logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, \(type) type mismatch – \(String(reflecting: context), privacy: .public)")
-            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                with: ["url" : urlString,
-                                                       "reason" : "\(type) type mismatch",
-                                                       "codingPath" : codingPathString])
+            reason = "\(type) type mismatch"
         case let .valueNotFound(type, context):
             let codingPath = context.codingPath.map { $0.stringValue }
-            let codingPathString = codingPath.joined(separator: ".")
+            codingPathString = codingPath.joined(separator: ".")
             logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing \(type) value – \(String(reflecting: context), privacy: .public)")
-            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                with: ["url" : urlString,
-                                                       "reason" : "missing \(type) value",
-                                                       "codingPath" : codingPathString])
+            reason = "missing \(type) value"
         case let .keyNotFound(key, context):
             let codingPath = context.codingPath.map { $0.stringValue }
-            let codingPathString = codingPath.joined(separator: ".")
+            codingPathString = codingPath.joined(separator: ".")
             logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing key '\(key.stringValue, privacy: .public)' not found – \(String(reflecting: context), privacy: .public)")
-            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                with: ["url" : urlString,
-                                                       "reason" : "missing key: \(key.stringValue)",
-                                                       "codingPath" : codingPathString])
+            reason = "missing key: \(key.stringValue)"
         case let .dataCorrupted(context):
             let codingPath = context.codingPath.map { $0.stringValue }
-            let codingPathString = codingPath.joined(separator: ".")
+            codingPathString = codingPath.joined(separator: ".")
             logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, invalid JSON = \(String(reflecting: context), privacy: .public)")
-            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                with: ["url" : urlString,
-                                                       "reason" : "invalid JSON",
-                                                       "codingPath" : codingPathString])
+            reason = "invalid JSON"
         @unknown default:
             logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, unknown error: \(String(reflecting: decodingError), privacy: .public)")
-            telemetryInteractor.sendAnonymously(signalType: "jsonDecodingError",
-                                                with: ["url" : urlString,
-                                                       "reason" : "unknown"])
+            reason = "unknown"
         }
+        return RESTWebServiceError.decodingError(decodingError, urlString, reason, codingPathString)
     }
 
     func performRateLimiting() async {

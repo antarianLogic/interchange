@@ -47,7 +47,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
             guard let strongSelf = self else { return nil }
 
             if let uSafetyLimit = safetyLimit {
-                guard receivedCount < uSafetyLimit else { throw RESTWebServiceError.safetyLimitReached }
+                guard receivedCount < uSafetyLimit else { throw RESTWebServiceError.safetyLimitReached(currentResource.path) }
             }
 
             if let uTotalCount = totalCount {
@@ -55,7 +55,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
                 guard receivedCount < uTotalCount else { return nil }
 
                 guard let newResource = currentResource.nextPageResource(at: receivedCount) else {
-                    throw RESTWebServiceError.invalidRESTResource
+                    throw RESTWebServiceError.invalidRESTResource(currentResource.path)
                 }
 
                 currentResource = newResource
