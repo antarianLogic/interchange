@@ -58,7 +58,6 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
                 let errorString = String(data: data.prefix(1024), encoding: .utf8) ?? ""
                 let error = RESTWebServiceError.httpError(httpResponse.statusCode, errorString)
                 logger.warning("In RESTWebServiceManager.sendRequest, HTTP error with status code: \(httpResponse.statusCode) – \(errorString, privacy: .public)")
-                // don't send out telemetry here, we can't do anything about this error
                 throw error
             }
         }
@@ -121,7 +120,6 @@ extension RESTWebServiceManager {
         guard var validComponents = components else {
             let error = RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
             logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
-            // don't send out telemetry here, this would be a pure programming error that would likely be found early
             throw error
         }
 
@@ -143,7 +141,6 @@ extension RESTWebServiceManager {
         guard let url = validComponents.url else {
             let error = RESTWebServiceError.insufficientURLComponents(validComponents.description)
             logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
-            // don't send out telemetry here, this would be a pure programming error that would likely be found early
             throw error
         }
 
@@ -160,14 +157,12 @@ extension RESTWebServiceManager {
             guard let validQuery = bodyComponents.query else {
                 let error = RESTWebServiceError.bodyParametersInvalid(resource.bodyParameters)
                 logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
-                // don't send out telemetry here, this would be a pure programming error that would likely be found early
                 throw error
             }
 
             guard let validData = validQuery.data(using: .utf8) else {
                 let error = RESTWebServiceError.bodyStringInvalid(validQuery)
                 logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
-                // don't send out telemetry here, this would be a pure programming error that would likely be found early
                 throw error
             }
 
