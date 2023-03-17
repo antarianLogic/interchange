@@ -23,7 +23,7 @@ public actor MockRESTWebServiceManager {
 
 extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
-    public func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
+    public func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable {
 
         try await Task.sleep(nanoseconds: 10)
 
@@ -36,10 +36,10 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         return model
     }
 
-    public nonisolated func pageStream<M>(with initialResource: RESTResource,
+    public nonisolated func pageStream<M>(with initialEndpoint: RESTEndpoint,
                                           safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable {
 
-        var currentResource = initialResource
+        var currentEndpoint = initialEndpoint
         var totalCount: UInt? = nil
         var receivedCount: UInt = 0
 
@@ -47,20 +47,20 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
             guard let strongSelf = self else { return nil }
 
             if let uSafetyLimit = safetyLimit {
-                guard receivedCount < uSafetyLimit else { throw RESTWebServiceError.safetyLimitReached(currentResource.path) }
+                guard receivedCount < uSafetyLimit else { throw RESTWebServiceError.safetyLimitReached(currentEndpoint.path) }
             }
 
             if let uTotalCount = totalCount {
                 // not first pass
                 guard receivedCount < uTotalCount else { return nil }
 
-                guard let newResource = currentResource.nextPageResource(at: receivedCount) else {
-                    throw RESTWebServiceError.invalidRESTResource(currentResource.path)
+                guard let newEndpoint = currentEndpoint.nextPageEndpoint(at: receivedCount) else {
+                    throw RESTWebServiceError.invalidRESTEndpoint(currentEndpoint.path)
                 }
 
-                currentResource = newResource
+                currentEndpoint = newEndpoint
             }
-            let model: M = try await strongSelf.sendRequest(with: currentResource)
+            let model: M = try await strongSelf.sendRequest(with: currentEndpoint)
 
             try Task.checkCancellation()
 

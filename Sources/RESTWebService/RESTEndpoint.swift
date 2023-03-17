@@ -1,5 +1,5 @@
 //
-//  RESTResource.swift
+//  RESTEndpoint.swift
 //  RESTWebService
 //
 //  Created by Carl Sheppard on 1/15/21.
@@ -8,8 +8,8 @@
 
 import Foundation
 
-/// Web service resource specification.
-public struct RESTResource {
+/// Web service endpoint specification.
+public struct RESTEndpoint {
 
     /// HTTP method (or verb). For example, GET, POST, DELETE, etc.
     public let method: RESTMethod
@@ -64,9 +64,9 @@ public struct RESTResource {
     }
 }
 
-extension RESTResource: Equatable {}
+extension RESTEndpoint: Equatable {}
 
-public extension RESTResource {
+public extension RESTEndpoint {
 
     var pageSize: UInt? {
         guard let pageSizeString = pageSizeQueryItem?.value else { return nil }
@@ -86,7 +86,7 @@ public extension RESTResource {
         }
     }
 
-    func nextPageResource(at offset: UInt? = nil) -> RESTResource? {
+    func nextPageEndpoint(at offset: UInt? = nil) -> RESTEndpoint? {
         guard let validPageSize = pageSize,
               let validCurrentOffset = currentOffset else { return nil }
 
@@ -94,14 +94,14 @@ public extension RESTResource {
 
         if let validOffsetQueryItem = offsetQueryItem {
             let newOffsetQueryItem = URLQueryItem(name: validOffsetQueryItem.name, value: String(newOffset))
-            return RESTResource(method: method, path: path, headers: headers, queryParameters: queryParameters,
+            return RESTEndpoint(method: method, path: path, headers: headers, queryParameters: queryParameters,
                                 bodyParameters: bodyParameters,
                                 pageSizeQueryItem: pageSizeQueryItem, offsetQueryItem: newOffsetQueryItem,
                                 cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)
         } else if let validPageQueryItem = pageQueryItem {
             let newPage = (newOffset / validPageSize) + 1
             let newPageQueryItem = URLQueryItem(name: validPageQueryItem.name, value: String(newPage))
-            return RESTResource(method: method, path: path, headers: headers, queryParameters: queryParameters,
+            return RESTEndpoint(method: method, path: path, headers: headers, queryParameters: queryParameters,
                                 bodyParameters: bodyParameters,
                                 pageSizeQueryItem: pageSizeQueryItem, pageQueryItem: newPageQueryItem,
                                 cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)

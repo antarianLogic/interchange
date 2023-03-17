@@ -10,7 +10,7 @@ import Foundation
 
 public enum RESTWebServiceError: Error {
 
-    case invalidRESTResource(String)
+    case invalidRESTEndpoint(String)
     case invalidBaseURL(String)
     case insufficientURLComponents(String)
     case bodyParametersInvalid([URLQueryItem])
@@ -24,7 +24,7 @@ extension RESTWebServiceError: Equatable {
 
     public static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
-        case let (.invalidRESTResource(lhsURLString), .invalidRESTResource(rhsURLString)):
+        case let (.invalidRESTEndpoint(lhsURLString), .invalidRESTEndpoint(rhsURLString)):
             return lhsURLString == rhsURLString
         case let (.invalidBaseURL(lhsURLString), .invalidBaseURL(rhsURLString)):
             return lhsURLString == rhsURLString
@@ -53,8 +53,8 @@ extension RESTWebServiceError: CustomDebugStringConvertible {
 
     public var debugDescription: String {
         switch self {
-        case .invalidRESTResource(let urlString):
-            return "Invalid REST resource for URL: \(urlString)"
+        case .invalidRESTEndpoint(let urlString):
+            return "Invalid REST endpoint specification for URL: \(urlString)"
         case .invalidBaseURL(let urlString):
             return "Invalid base URL: \(urlString)"
         case .insufficientURLComponents(let componentsString):

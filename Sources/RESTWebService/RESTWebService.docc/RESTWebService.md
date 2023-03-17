@@ -1,10 +1,10 @@
 # ``RESTWebService``
 
-A Swift Concurrent REST web service framework using declarative resource descriptions and returning decoded generic types.
+A Swift Concurrent REST web service framework using declarative endpoint specifications and returning decoded generic types.
 
 ## Overview
 
-A ``RESTWebServiceManager`` uses [URLSession](https://developer.apple.com/documentation/foundation/urlsession) to make [Swift Concurrent](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency) calls to [RESTful](https://en.wikipedia.org/wiki/Representational_state_transfer) web services. A ``RESTResource`` struct (which ideally would be preconfigured with static convenience initializers defined in separate code or a package) is used to define the specifications of specific REST resources. The results are decoded asynchronously (according to the generic [Decodable](https://developer.apple.com/documentation/swift/decodable) type specified by the caller) from the JSON response and returned.
+A ``RESTWebServiceManager`` uses [URLSession](https://developer.apple.com/documentation/foundation/urlsession) to make [Swift Concurrent](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency) requests to [RESTful](https://en.wikipedia.org/wiki/Representational_state_transfer) web services. A ``RESTEndpoint`` struct (which ideally would be preconfigured with static convenience initializers defined in separate code or a package) is used to define the specifications of specific REST endpoints. The results are decoded asynchronously (according to the generic [Decodable](https://developer.apple.com/documentation/swift/decodable) type specified by the caller) from the JSON response and returned.
 
 ### Initialization
 
@@ -17,27 +17,27 @@ let wsManager = RESTWebServiceManager(baseURL: url)
 
 Also the `URLSession` can optionally be injected (see <doc:RESTWebService#URLSession-Injection>) and rate-limiting headers can be specified (see <doc:RESTWebService#Rate-Limiting>).
 
-### One-shot calls
+### One-shot Requests
 
-For single-page calls, use ``RESTWebServiceManager/sendRequest(with:)``, passing a resource of type ``RESTResource`` and specifying the `Decodable` type to return. For example:
+For single-page requests, use ``RESTWebServiceManager/sendRequest(with:)``, passing a endpoint specification of type ``RESTEndpoint`` and specifying the `Decodable` type to return. For example:
 
 ```swift
-let resource = FooResources.getFoo(input: "123")
+let endpoint = FooEndpoints.getFoo(input: "123")
 do {
-    let foo: SomeDecodable = try await wsManager.sendRequest(with: resource)
+    let foo: SomeDecodable = try await wsManager.sendRequest(with: endpoint)
     // foo now contains a fully decoded model object
 } catch {
     print("error: \(String(reflecting:error))")
 }
 ```
 
-### Multipage Calls
+### Multipage Requests
 
 For endpoints that return multipage responses, ``RESTWebServiceManager/pageStream(with:safetyLimit:)`` can be used to immediately return an [AsyncThrowingStream](https://developer.apple.com/documentation/swift/asyncthrowingstream) that can be iterated asynchronously to retrieve each page. An optional safety limit count can be passed to insure the iterator won't be infinite or if only a limited number of pages are desired. The `Decodable` type must also conform to ``Pageable``. For example:
 
 ```swift
-let resource = FooResources.getFoos()
-let stream: AsyncThrowingStream<SomeDecodable,Error> = wsManager.pageStream(with: resource, safetyLimit: 1000)
+let endpoint = FooEndpoints.getFoos()
+let stream: AsyncThrowingStream<SomeDecodable,Error> = wsManager.pageStream(with: endpoint, safetyLimit: 1000)
 var pageIterator = stream.makeAsyncIterator()
 do {
     let page1 = try await pageIterator.next()
@@ -59,14 +59,14 @@ do {
 
 If the endpoint supports rate-limiting statistics in the response headers, a rate limiting back-off delay scheme can optionally be enabled by passing the header keys in a ``RESTRateLimitHeaders`` struct during initialization. See ``RESTWebServiceManager/init(baseURL:session:rateLimitHeaders:)``.
 
-The delay (`waitInterval`) before performing the next web service call is calculated using a reciprocal power function of the total calls allowed per second (`rateLimit`) and the remaining calls allowed currently (`rateLimitRemaining`), represented by the following pseudocode:
+The delay (`waitInterval`) before performing the next web service request is calculated using a reciprocal power function of the total requests allowed per second (`rateLimit`) and the remaining requests allowed currently (`rateLimitRemaining`), represented by the following pseudocode:
 
 ```
 waitInterval = previousRequestTime + rateLimit / (1.5 ^ rateLimitRemaining) - currentTime
 if waitInterval > 0, wait waitInterval
 ```
 
-So as you can see, for nominal values of `rateLimit` (~60/sec) when `rateLimitRemaining` is as little as half of `rateLimit`, the delay is still pretty small (less than a millisecond). But as `rateLimitRemaining` approaches zero, the delay approaches `rateLimit`, backing off in a hopefully graceful manner so the UI responsiveness won't just go from 100% to 0% when it hits the wall and no more web service calls can be made for a while.
+So as you can see, for nominal values of `rateLimit` (~60/sec) when `rateLimitRemaining` is as little as half of `rateLimit`, the delay is still pretty small (less than a millisecond). But as `rateLimitRemaining` approaches zero, the delay approaches `rateLimit`, backing off in a hopefully graceful manner so the UI responsiveness won't just go from 100% to 0% when it hits the wall and no more web service requests can be made for a while.
 
 ### Errors
 

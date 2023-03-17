@@ -38,13 +38,13 @@ public actor RESTWebServiceManager {
 extension RESTWebServiceManager: RESTWebServiceManaging {
 
     /// Performs web service request asynchronously.
-    /// - Parameter resource: Web service resource specification.
+    /// - Parameter endpoint: Web service endpoint specification.
     /// - Returns: Decoded model object.
-    public func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
+    public func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable {
 
         await performRateLimiting()
 
-        let request = try buildRequest(with: resource)
+        let request = try buildRequest(with: endpoint)
 
         prevRequestTime = .now
         let (data, response) = try await session.data(for: request)
@@ -82,13 +82,13 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
 
     /// Creates an AsyncThrowingStream that can be iterated on to perform multipage web service requests.
     /// - Parameters:
-    ///   - initialResource: Web service resource specification for initial page request. Subsequent page requests will used modified versions of this resource specification for each page.
+    ///   - initialEndpoint: Web service endpoint specification for initial page request. Subsequent page requests will used modified versions of this endpoint specification for each page.
     ///   - safetyLimit: Optional page limit to protect against infinite loops during iteration or to simply limit the maximum number of pages to retrieve.
     /// - Returns: AsyncThrowingStream to be iterated on.
-    nonisolated public func pageStream<M>(with initialResource: RESTResource,
+    nonisolated public func pageStream<M>(with initialEndpoint: RESTEndpoint,
                                           safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable {
 
-        var currentResource = initialResource
+        var currentEndpoint = initialEndpoint
         var totalCount: UInt? = nil
         var receivedCount: UInt = 0
 
@@ -97,7 +97,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
 
             if let uSafetyLimit = safetyLimit {
                 guard receivedCount < uSafetyLimit else {
-                    let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentResource.path)"
+                    let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentEndpoint.path)"
                     strongSelf.logger.warning("In RESTWebServiceManager.pageStream, safety limit reached for URL: \(failingURL, privacy: .public)")
                     throw RESTWebServiceError.safetyLimitReached(failingURL)
                 }
@@ -107,15 +107,15 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
                 // not first pass
                 guard receivedCount < uTotalCount else { return nil }
 
-                guard let newResource = currentResource.nextPageResource(at: receivedCount) else {
-                    let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentResource.path)"
-                    strongSelf.logger.warning("In RESTWebServiceManager.pageStream, invalid next page resource for URL: \(failingURL, privacy: .public)")
-                    throw RESTWebServiceError.invalidRESTResource(failingURL)
+                guard let newEndpoint = currentEndpoint.nextPageEndpoint(at: receivedCount) else {
+                    let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentEndpoint.path)"
+                    strongSelf.logger.warning("In RESTWebServiceManager.pageStream, invalid next page endpoint specification for URL: \(failingURL, privacy: .public)")
+                    throw RESTWebServiceError.invalidRESTEndpoint(failingURL)
                 }
 
-                currentResource = newResource
+                currentEndpoint = newEndpoint
             }
-            let model: M = try await strongSelf.sendRequest(with: currentResource)
+            let model: M = try await strongSelf.sendRequest(with: currentEndpoint)
 
             try Task.checkCancellation()
 
@@ -128,7 +128,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
 
 extension RESTWebServiceManager {
 
-    func buildRequest(with resource: RESTResource) throws -> URLRequest {
+    func buildRequest(with endpoint: RESTEndpoint) throws -> URLRequest {
 
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
@@ -137,15 +137,15 @@ extension RESTWebServiceManager {
             throw error
         }
 
-        validComponents.path = validComponents.path.appending(resource.path)
+        validComponents.path = validComponents.path.appending(endpoint.path)
 
-        var queryItems = resource.queryParameters
-        if let pageSizeQueryItem = resource.pageSizeQueryItem {
+        var queryItems = endpoint.queryParameters
+        if let pageSizeQueryItem = endpoint.pageSizeQueryItem {
             queryItems.append(pageSizeQueryItem)
         }
-        if let offsetQueryItem = resource.offsetQueryItem {
+        if let offsetQueryItem = endpoint.offsetQueryItem {
             queryItems.append(offsetQueryItem)
-        } else if let pageQueryItem = resource.pageQueryItem {
+        } else if let pageQueryItem = endpoint.pageQueryItem {
             queryItems.append(pageQueryItem)
         }
         if !queryItems.isEmpty {
@@ -159,17 +159,17 @@ extension RESTWebServiceManager {
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = resource.method.rawValue
+        request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        for header in resource.headers {
+        for header in endpoint.headers {
             request.setValue(header.value, forHTTPHeaderField: header.key)
         }
 
-        if !resource.bodyParameters.isEmpty {
+        if !endpoint.bodyParameters.isEmpty {
             var bodyComponents = URLComponents()
-            bodyComponents.queryItems = resource.bodyParameters
+            bodyComponents.queryItems = endpoint.bodyParameters
             guard let validQuery = bodyComponents.query else {
-                let error = RESTWebServiceError.bodyParametersInvalid(resource.bodyParameters)
+                let error = RESTWebServiceError.bodyParametersInvalid(endpoint.bodyParameters)
                 logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
                 throw error
             }
@@ -183,7 +183,7 @@ extension RESTWebServiceManager {
             request.httpBody = validData
         }
 
-        if let cacheInterval = resource.cacheInterval,
+        if let cacheInterval = endpoint.cacheInterval,
            cacheInterval > 0,
            let cachedResponse = session.configuration.urlCache?.cachedResponse(for: request),
            let httpURLResponse = cachedResponse.response as? HTTPURLResponse,
@@ -194,7 +194,7 @@ extension RESTWebServiceManager {
             request.cachePolicy = .returnCacheDataElseLoad
         } // otherwise just use default cachePolicy (.useProtocolCachePolicy)
 
-        if let timeoutInterval = resource.timeoutInterval,
+        if let timeoutInterval = endpoint.timeoutInterval,
            timeoutInterval > 0 {
             request.timeoutInterval = timeoutInterval
         }

@@ -8,8 +8,8 @@
 
 public protocol RESTWebServiceManaging {
 
-    func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable
+    func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable
 
-    func pageStream<M>(with initialResource: RESTResource,
+    func pageStream<M>(with initialEndpoint: RESTEndpoint,
                        safetyLimit: UInt?) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable
 }
