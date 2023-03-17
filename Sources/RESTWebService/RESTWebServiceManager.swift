@@ -10,8 +10,14 @@ import Foundation
 import os
 import DateUtils
 
+/// The main RESTWebService object that handles web service requests for a given web service.
 public actor RESTWebServiceManager {
 
+    /// RESTWebServiceManager Initializer.
+    /// - Parameters:
+    ///   - baseURL: Web service base URL. Includes everything in the URL that is common to all routes such as version path, etc. but not the method parts themselves. A slash at the end is not required.
+    ///   - session: Optional URLSession to be used for all service requests. If omitted, the shared URLSession will be used.
+    ///   - rateLimitHeaders: Optional specification of service request headers used for rate limiting. If omitted, rate limiting will not be performed. See <doc:RESTWebService#Rate-Limiting>.
     public init(baseURL: URL,
                 session: URLSession = URLSession.shared,
                 rateLimitHeaders: RESTRateLimitHeaders? = nil) {
@@ -31,6 +37,9 @@ public actor RESTWebServiceManager {
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
 
+    /// Performs web service request asynchronously.
+    /// - Parameter resource: Web service resource specification.
+    /// - Returns: Decoded model object.
     public func sendRequest<M>(with resource: RESTResource) async throws -> M where M: Decodable {
 
         await performRateLimiting()
@@ -71,6 +80,11 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
         }
     }
 
+    /// Creates an AsyncThrowingStream that can be iterated on to perform multipage web service requests.
+    /// - Parameters:
+    ///   - initialResource: Web service resource specification for initial page request. Subsequent page requests will used modified versions of this resource specification for each page.
+    ///   - safetyLimit: Optional page limit to protect against infinite loops during iteration or to simply limit the maximum number of pages to retrieve.
+    /// - Returns: AsyncThrowingStream to be iterated on.
     nonisolated public func pageStream<M>(with initialResource: RESTResource,
                                           safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable {
 

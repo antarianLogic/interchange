@@ -6,6 +6,7 @@
 //  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
+/// A protocol that identifies the items and statistics in a response page.
 public protocol Pageable {
 
     associatedtype Submodel

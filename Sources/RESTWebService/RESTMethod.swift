@@ -6,6 +6,7 @@
 //  Copyright © 2022 Antarian Logic LLC. All rights reserved.
 //
 
+/// HTTP method (or verb).
 public enum RESTMethod: String {
     case get = "GET"
     case head = "HEAD"

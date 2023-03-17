@@ -8,26 +8,37 @@
 
 import Foundation
 
+/// Web service resource specification.
 public struct RESTResource {
 
+    /// HTTP method (or verb). For example, GET, POST, DELETE, etc.
     public let method: RESTMethod
 
+    /// Route path.
     public let path: String
 
+    /// HTTP Headers.
     public let headers: [String : String]
 
+    /// URL query parameters.
     public let queryParameters: [URLQueryItem]
 
+    /// POST body parameters (in URLQueryItem format)
     public let bodyParameters: [URLQueryItem]
 
+    /// The special query parameter the web service expects for page size.
     public let pageSizeQueryItem: URLQueryItem?
 
+    /// The special query parameter the web service expects for starting offset.
     public let offsetQueryItem: URLQueryItem?
 
+    /// The special query parameter the web service expects for starting page.
     public let pageQueryItem: URLQueryItem?
 
+    /// The elapsed time before the last cached response is ignored and a fresh request is made.
     public let cacheInterval: TimeInterval?
 
+    /// The elapsed time to wait for a response before giving up.
     public let timeoutInterval: TimeInterval?
 
     public init(method: RESTMethod = .get,
