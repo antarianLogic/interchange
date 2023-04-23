@@ -12,11 +12,15 @@ public actor MockRESTWebServiceManager {
         self.shouldFail = shouldFail
     }
 
-    public func setMockData(_ value: Any?) {
-        mockData = value
+    public func pushMockData(_ value: Any) {
+        mockData.append(value)
     }
 
-    var mockData: Any? = nil
+    public func clearMockData() {
+        mockData = []
+    }
+
+    var mockData: [Any] = []
 
     let shouldFail: Bool
 }
@@ -31,7 +35,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
             throw RESTWebServiceError.httpError(404, "404 Not Found")
         }
 
-        guard let model = mockData as? M else { fatalError() }
+        guard let model = mockData.popLast() as? M else { fatalError() }
 
         return model
     }
