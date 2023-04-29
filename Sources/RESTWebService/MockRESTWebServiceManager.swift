@@ -32,7 +32,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         try await Task.sleep(nanoseconds: 10)
 
         guard !shouldFail else {
-            throw RESTWebServiceError.httpError(404, "404 Not Found")
+            throw RESTWebServiceError.httpError(404, "404 Not Found", "http://example.com")
         }
 
         guard let model = mockData.popLast() as? M else { fatalError() }

@@ -15,7 +15,7 @@ public enum RESTWebServiceError: Error {
     case insufficientURLComponents(String)
     case bodyParametersInvalid([URLQueryItem])
     case bodyStringInvalid(String)
-    case httpError(Int, String)
+    case httpError(Int, String, String)
     case safetyLimitReached(String)
     case decodingError(DecodingError, String, String, String?)
 }
@@ -34,9 +34,10 @@ extension RESTWebServiceError: Equatable {
             return lhsBodyParameters == rhsBodyParameters
         case let (.bodyStringInvalid(lhsBodyString), .bodyStringInvalid(rhsBodyString)):
             return lhsBodyString == rhsBodyString
-        case let (.httpError(lhsStatusCode, lhsErrorString), .httpError(rhsStatusCode, rhsErrorString)):
+        case let (.httpError(lhsStatusCode, lhsErrorString, lhsURLString), .httpError(rhsStatusCode, rhsErrorString, rhsURLString)):
             return lhsStatusCode == rhsStatusCode &&
-                   lhsErrorString == rhsErrorString
+                   lhsErrorString == rhsErrorString &&
+                   lhsURLString == rhsURLString
         case let (.safetyLimitReached(lhsURLString), .safetyLimitReached(rhsURLString)):
             return lhsURLString == rhsURLString
         case let (.decodingError(_, lhsURLString, lhsReason, lhsCodingPath), .decodingError(_, rhsURLString, rhsReason, rhsCodingPath)):
@@ -63,8 +64,8 @@ extension RESTWebServiceError: CustomDebugStringConvertible {
             return "Body parameters could not be converted to a string: bodyParameters: \(bodyParameters)"
         case .bodyStringInvalid(let bodyString):
             return "Body string could not be converted to UTF-8 data: bodyString: \(bodyString)"
-        case .httpError(let statusCode, let errorString):
-            return "Received HTTP error code: \(statusCode). Raw result JSON: \"\(errorString)\""
+        case let .httpError(statusCode, errorString, urlString):
+            return "Received HTTP error code: \(statusCode) for URL: \(urlString). Raw result JSON: \"\(errorString)\""
         case .safetyLimitReached(let urlString):
             return "Safety limit reached for URL: \(urlString)"
         case let .decodingError(error, urlString, reason, codingPath):
