@@ -1,12 +1,12 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.9
 
 import PackageDescription
 
 let package = Package(
-    name: "RESTWebService",
+    name: "rest-web-service",
     platforms: [
-        .iOS("16.0"),
-        .macOS("13.0")
+        .iOS(.v17),
+        .macOS(.v14)
     ],
     products: [
         .library(
@@ -15,7 +15,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/WeTransfer/Mocker.git", from: "3.0.0"),
-        .package(url: "https://github.com/antarianLogic/date-utils.git", from: "0.2.0")
+        .package(url: "https://github.com/antarianLogic/date-utils.git", from: "0.3.0")
     ],
     targets: [
         .target(
