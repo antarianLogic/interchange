@@ -3,13 +3,13 @@
 //  RESTWebService
 //
 //  Created by Carl Sheppard on 1/15/21.
-//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
 import Foundation
 
 /// Web service endpoint specification.
-public struct RESTEndpoint {
+public struct RESTEndpoint: Sendable {
 
     /// HTTP method (or verb). For example, GET, POST, DELETE, etc.
     public let method: RESTMethod

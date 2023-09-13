@@ -3,7 +3,7 @@
 //  RESTWebService
 //
 //  Created by Carl Sheppard on 1/29/21.
-//  Copyright © 2022 Antarian Logic LLC. All rights reserved.
+//  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
 public actor MockRESTWebServiceManager {
@@ -27,7 +27,7 @@ public actor MockRESTWebServiceManager {
 
 extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
-    public func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable {
+    public func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable & Sendable {
 
         try await Task.sleep(nanoseconds: 10)
 
@@ -41,7 +41,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
     }
 
     public nonisolated func pageStream<M>(with initialEndpoint: RESTEndpoint,
-                                          safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable {
+                                          safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
 
         var currentEndpoint = initialEndpoint
         var totalCount: UInt? = nil

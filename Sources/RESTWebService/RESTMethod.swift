@@ -7,7 +7,7 @@
 //
 
 /// HTTP method (or verb).
-public enum RESTMethod: String {
+public enum RESTMethod: String, Sendable {
     case get = "GET"
     case head = "HEAD"
     case post = "POST"
