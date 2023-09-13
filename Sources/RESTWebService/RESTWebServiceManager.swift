@@ -40,7 +40,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
     /// Performs web service request asynchronously.
     /// - Parameter endpoint: Web service endpoint specification.
     /// - Returns: Decoded model object.
-    public func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable {
+    public func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable & Sendable {
 
         await performRateLimiting()
 
@@ -87,7 +87,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
     ///   - safetyLimit: Optional page limit to protect against infinite loops during iteration or to simply limit the maximum number of pages to retrieve.
     /// - Returns: AsyncThrowingStream to be iterated on.
     nonisolated public func pageStream<M>(with initialEndpoint: RESTEndpoint,
-                                          safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable {
+                                          safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
 
         var currentEndpoint = initialEndpoint
         var totalCount: UInt? = nil

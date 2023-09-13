@@ -21,6 +21,7 @@ let package = Package(
         .target(
             name: "RESTWebService",
             dependencies: [.product(name: "DateUtils", package: "date-utils")]
+//            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .testTarget(
             name: "RESTWebServiceTests",
