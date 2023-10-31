@@ -142,7 +142,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         measure {
             let exp = expectation(description: "testPerformRateLimiting")
             Task {
-                try? await sut.performRateLimiting()
+                await sut.performRateLimiting()
                 exp.fulfill()
             }
             wait(for: [exp], timeout: 60)
