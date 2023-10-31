@@ -66,8 +66,6 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
             }
             let model: M = try await strongSelf.sendRequest(with: currentEndpoint)
 
-            try Task.checkCancellation()
-
             totalCount = model.totalCount
             receivedCount += UInt(model.submodels.count)
             return model

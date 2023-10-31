@@ -42,7 +42,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
     /// - Returns: Decoded model object.
     public func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable & Sendable {
 
-        await performRateLimiting()
+        try await performRateLimiting()
 
         let request = try buildRequest(with: endpoint)
 
@@ -117,8 +117,6 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
                 currentEndpoint = newEndpoint
             }
             let model: M = try await strongSelf.sendRequest(with: currentEndpoint)
-
-            try Task.checkCancellation()
 
             totalCount = model.totalCount
             receivedCount += UInt(model.submodels.count)
@@ -234,7 +232,7 @@ extension RESTWebServiceManager {
         return RESTWebServiceError.decodingError(decodingError, urlString, reason, codingPathString)
     }
 
-    func performRateLimiting() async {
+    func performRateLimiting() async throws {
         guard rateLimit > 0,
               rateLimitRemaining >= 0,
               rateLimitRemaining < rateLimit else { return }
@@ -249,6 +247,8 @@ extension RESTWebServiceManager {
         let capturedRateLimitRemaining = rateLimitRemaining
         logger.info("In RESTWebServiceManager.performRateLimiting, rateLimit: \(capturedRateLimit), rateLimitRemaining: \(capturedRateLimitRemaining), waiting \(waitNanoseconds) nanoseconds...")
         try? await Task.sleep(nanoseconds: waitNanoseconds)
+
+        try Task.checkCancellation()
     }
 }
 
