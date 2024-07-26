@@ -88,42 +88,11 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
     ///   - initialEndpoint: Web service endpoint specification for initial page request. Subsequent page requests will used modified versions of this endpoint specification for each page.
     ///   - safetyLimit: Optional page limit to protect against infinite loops during iteration or to simply limit the maximum number of pages to retrieve.
     /// - Returns: AsyncThrowingStream to be iterated on.
-    nonisolated public func pageStream<M>(with initialEndpoint: RESTEndpoint,
-                                          safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
-
-        var currentEndpoint = initialEndpoint
-        var totalCount: UInt? = nil
-        var receivedCount: UInt = 0
-
-        return AsyncThrowingStream { [weak self] in
-            guard let strongSelf = self else { return nil }
-
-            if let uSafetyLimit = safetyLimit {
-                guard receivedCount < uSafetyLimit else {
-                    let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentEndpoint.path)"
-                    strongSelf.logger.warning("In RESTWebServiceManager.pageStream, safety limit reached for URL: \(failingURL, privacy: .public)")
-                    throw RESTWebServiceError.safetyLimitReached(failingURL)
-                }
-            }
-
-            if let uTotalCount = totalCount {
-                // not first pass
-                guard receivedCount < uTotalCount else { return nil }
-
-                guard let newEndpoint = currentEndpoint.nextPageEndpoint(at: receivedCount) else {
-                    let failingURL = "\(strongSelf.baseURL.absoluteString)/\(currentEndpoint.path)"
-                    strongSelf.logger.warning("In RESTWebServiceManager.pageStream, invalid next page endpoint specification for URL: \(failingURL, privacy: .public)")
-                    throw RESTWebServiceError.invalidRESTEndpoint(failingURL)
-                }
-
-                currentEndpoint = newEndpoint
-            }
-            let model: M = try await strongSelf.sendRequest(with: currentEndpoint)
-
-            totalCount = model.totalCount
-            receivedCount += UInt(model.submodels.count)
-            return model
-        }
+    public func pageStream<M>(with initialEndpoint: RESTEndpoint,
+                              safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
+        let actor = PageStreamActor(wsManager: self, baseURLString: baseURL.absoluteString,
+                                    initialEndpoint: initialEndpoint, safetyLimit: safetyLimit)
+        return AsyncThrowingStream(unfolding: actor.unfoldingClosure)
     }
 }
 

@@ -40,35 +40,10 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         return model
     }
 
-    public nonisolated func pageStream<M>(with initialEndpoint: RESTEndpoint,
-                                          safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
-
-        var currentEndpoint = initialEndpoint
-        var totalCount: UInt? = nil
-        var receivedCount: UInt = 0
-
-        return AsyncThrowingStream { [weak self] in
-            guard let strongSelf = self else { return nil }
-
-            if let uSafetyLimit = safetyLimit {
-                guard receivedCount < uSafetyLimit else { throw RESTWebServiceError.safetyLimitReached(currentEndpoint.path) }
-            }
-
-            if let uTotalCount = totalCount {
-                // not first pass
-                guard receivedCount < uTotalCount else { return nil }
-
-                guard let newEndpoint = currentEndpoint.nextPageEndpoint(at: receivedCount) else {
-                    throw RESTWebServiceError.invalidRESTEndpoint(currentEndpoint.path)
-                }
-
-                currentEndpoint = newEndpoint
-            }
-            let model: M = try await strongSelf.sendRequest(with: currentEndpoint)
-
-            totalCount = model.totalCount
-            receivedCount += UInt(model.submodels.count)
-            return model
-        }
+    public func pageStream<M>(with initialEndpoint: RESTEndpoint,
+                              safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
+        let actor = PageStreamActor(wsManager: self, baseURLString: "",
+                                    initialEndpoint: initialEndpoint, safetyLimit: safetyLimit)
+        return AsyncThrowingStream(unfolding: actor.unfoldingClosure)
     }
 }

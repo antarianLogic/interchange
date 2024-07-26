@@ -1,12 +1,12 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.0
 
 import PackageDescription
 
 let package = Package(
     name: "rest-web-service",
     platforms: [
-        .iOS(.v17),
-        .macOS(.v14)
+        .iOS(.v15),
+        .macOS(.v12)
     ],
     products: [
         .library(
@@ -15,13 +15,12 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/WeTransfer/Mocker.git", from: "3.0.0"),
-        .package(url: "https://github.com/antarianLogic/date-utils.git", from: "0.3.0")
+        .package(url: "https://github.com/antarianLogic/date-utils.git", from: "0.4.0")
     ],
     targets: [
         .target(
             name: "RESTWebService",
             dependencies: [.product(name: "DateUtils", package: "date-utils")]
-//            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .testTarget(
             name: "RESTWebServiceTests",

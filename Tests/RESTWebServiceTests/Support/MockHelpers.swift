@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import Mocker
+@preconcurrency import Mocker
 
 extension Mock {
 
@@ -28,7 +28,7 @@ extension Mock {
     }
 
     init(url: URL, method: HTTPMethod = .get, jsonString: String, statusCode: Int = 200, additionalHeaders: [String : String] = [:]) {
-        self.init(url: url, dataType: .json, statusCode: statusCode, data: [method : Data(jsonString.utf8)], additionalHeaders: additionalHeaders)
+        self.init(url: url, contentType: .json, statusCode: statusCode, data: [method : Data(jsonString.utf8)], additionalHeaders: additionalHeaders)
     }
 
     static func registerAll() {

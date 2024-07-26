@@ -6,7 +6,7 @@
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
-public protocol RESTWebServiceManaging {
+public protocol RESTWebServiceManaging: Actor {
 
     func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable & Sendable
 
