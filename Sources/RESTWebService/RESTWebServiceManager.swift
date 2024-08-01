@@ -221,7 +221,7 @@ extension RESTWebServiceManager {
     }
 }
 
-public struct RESTRateLimitHeaders {
+public struct RESTRateLimitHeaders: Sendable {
 
     public let rateLimitKey: String
     public let rateLimitRemainingKey : String
