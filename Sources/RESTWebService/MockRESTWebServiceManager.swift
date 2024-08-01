@@ -40,7 +40,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         return model
     }
 
-    public func pageStream<M>(with initialEndpoint: RESTEndpoint,
+    nonisolated public func pageStream<M>(with initialEndpoint: RESTEndpoint,
                               safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
         let actor = PageStreamActor(wsManager: self, baseURLString: "",
                                     initialEndpoint: initialEndpoint, safetyLimit: safetyLimit)

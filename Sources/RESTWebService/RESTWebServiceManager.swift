@@ -88,7 +88,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
     ///   - initialEndpoint: Web service endpoint specification for initial page request. Subsequent page requests will used modified versions of this endpoint specification for each page.
     ///   - safetyLimit: Optional page limit to protect against infinite loops during iteration or to simply limit the maximum number of pages to retrieve.
     /// - Returns: AsyncThrowingStream to be iterated on.
-    public func pageStream<M>(with initialEndpoint: RESTEndpoint,
+    nonisolated public func pageStream<M>(with initialEndpoint: RESTEndpoint,
                               safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
         let actor = PageStreamActor(wsManager: self, baseURLString: baseURL.absoluteString,
                                     initialEndpoint: initialEndpoint, safetyLimit: safetyLimit)

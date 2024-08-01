@@ -71,7 +71,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let endpoint = FooBarEndpoints.getFoos()
         var models: [FoosModel] = []
         do {
-            for try await page: FoosModel in await sut.pageStream(with: endpoint) {
+            for try await page: FoosModel in sut.pageStream(with: endpoint) {
                 models.append(page)
             }
         } catch {
@@ -88,7 +88,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
         var models: [FoosModel] = []
         var theError: Error!
         do {
-            for try await page: FoosModel in await sut.pageStream(with: endpoint, safetyLimit: 1) {
+            for try await page: FoosModel in sut.pageStream(with: endpoint, safetyLimit: 1) {
                 models.append(page)
             }
         } catch {
@@ -152,7 +152,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testPageStreamIterator() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos()
-        let stream: AsyncThrowingStream<FoosModel,Error> = await sut.pageStream(with: endpoint, safetyLimit: 1000)
+        let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: endpoint, safetyLimit: 1000)
         var page1: FoosModel!
         var pageIterator = stream.makeAsyncIterator()
         do {
@@ -180,7 +180,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testPageStreamIteratorDoneFirstPass() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos3()
-        let stream: AsyncThrowingStream<FoosModel,Error> = await sut.pageStream(with: endpoint, safetyLimit: 1000)
+        let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: endpoint, safetyLimit: 1000)
         var page1: FoosModel!
         var pageIterator = stream.makeAsyncIterator()
         do {
@@ -201,7 +201,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testPageStreamIteratorWithPageQueryItem() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos4()
-        let stream: AsyncThrowingStream<FoosModel,Error> = await sut.pageStream(with: endpoint, safetyLimit: 1000)
+        let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: endpoint, safetyLimit: 1000)
         var page1: FoosModel!
         var pageIterator = stream.makeAsyncIterator()
         do {
@@ -229,7 +229,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testPageStreamIteratorWithPageQueryItemDoneFirstPass() async throws {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos6()
-        let stream: AsyncThrowingStream<FoosModel,Error> = await sut.pageStream(with: endpoint, safetyLimit: 1000)
+        let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: endpoint, safetyLimit: 1000)
         var page1: FoosModel!
         var pageIterator = stream.makeAsyncIterator()
         do {
