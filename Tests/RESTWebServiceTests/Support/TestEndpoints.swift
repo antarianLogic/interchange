@@ -73,6 +73,7 @@ enum FooBarEndpoints {
     static func putFoo() -> RESTEndpoint {
         return RESTEndpoint(method: .put,
                             path: "/foo",
-                            bodyParameters: [URLQueryItem(name: "body1", value: "body1 value")])
+                            headers: ["Content-Type": "application/json; charset=utf-8"],
+                            body: "{\"body1\": \"body1 value\"}")
     }
 }

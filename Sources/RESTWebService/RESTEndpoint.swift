@@ -23,8 +23,8 @@ public struct RESTEndpoint: Sendable {
     /// URL query parameters.
     public let queryParameters: [URLQueryItem]
 
-    /// POST body parameters (in URLQueryItem format)
-    public let bodyParameters: [URLQueryItem]
+    /// POST body string. Be sure and set the Content-Type header to specify what format it is in.
+    public let body: String?
 
     /// The special query parameter the web service expects for page size.
     public let pageSizeQueryItem: URLQueryItem?
@@ -45,7 +45,7 @@ public struct RESTEndpoint: Sendable {
                 path: String,
                 headers: [String : String] = [:],
                 queryParameters: [URLQueryItem] = [],
-                bodyParameters: [URLQueryItem] = [],
+                body: String? = nil,
                 pageSizeQueryItem: URLQueryItem? = nil,
                 offsetQueryItem: URLQueryItem? = nil,
                 pageQueryItem: URLQueryItem? = nil,
@@ -55,7 +55,7 @@ public struct RESTEndpoint: Sendable {
         self.path = path
         self.headers = headers
         self.queryParameters = queryParameters
-        self.bodyParameters = bodyParameters
+        self.body = body
         self.pageSizeQueryItem = pageSizeQueryItem
         self.offsetQueryItem = offsetQueryItem
         self.pageQueryItem = pageQueryItem
@@ -95,14 +95,14 @@ public extension RESTEndpoint {
         if let validOffsetQueryItem = offsetQueryItem {
             let newOffsetQueryItem = URLQueryItem(name: validOffsetQueryItem.name, value: String(newOffset))
             return RESTEndpoint(method: method, path: path, headers: headers, queryParameters: queryParameters,
-                                bodyParameters: bodyParameters,
+                                body: body,
                                 pageSizeQueryItem: pageSizeQueryItem, offsetQueryItem: newOffsetQueryItem,
                                 cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)
         } else if let validPageQueryItem = pageQueryItem {
             let newPage = (newOffset / validPageSize) + 1
             let newPageQueryItem = URLQueryItem(name: validPageQueryItem.name, value: String(newPage))
             return RESTEndpoint(method: method, path: path, headers: headers, queryParameters: queryParameters,
-                                bodyParameters: bodyParameters,
+                                body: body,
                                 pageSizeQueryItem: pageSizeQueryItem, pageQueryItem: newPageQueryItem,
                                 cacheInterval: cacheInterval, timeoutInterval: timeoutInterval)
         } else {

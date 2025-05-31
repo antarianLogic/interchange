@@ -13,7 +13,6 @@ public enum RESTWebServiceError: Error {
     case invalidRESTEndpoint(String)
     case invalidBaseURL(String)
     case insufficientURLComponents(String)
-    case bodyParametersInvalid([URLQueryItem])
     case bodyStringInvalid(String)
     case httpError(Int, String, String)
     case safetyLimitReached(String)
@@ -30,8 +29,6 @@ extension RESTWebServiceError: Equatable {
             return lhsURLString == rhsURLString
         case let (.insufficientURLComponents(lhsComponentsString), .insufficientURLComponents(rhsComponentsString)):
             return lhsComponentsString == rhsComponentsString
-        case let (.bodyParametersInvalid(lhsBodyParameters), .bodyParametersInvalid(rhsBodyParameters)):
-            return lhsBodyParameters == rhsBodyParameters
         case let (.bodyStringInvalid(lhsBodyString), .bodyStringInvalid(rhsBodyString)):
             return lhsBodyString == rhsBodyString
         case let (.httpError(lhsStatusCode, lhsErrorString, lhsURLString), .httpError(rhsStatusCode, rhsErrorString, rhsURLString)):
@@ -60,8 +57,6 @@ extension RESTWebServiceError: CustomDebugStringConvertible {
             return "Invalid base URL: \(urlString)"
         case .insufficientURLComponents(let componentsString):
             return "Insufficient URL components: \(componentsString)"
-        case .bodyParametersInvalid(let bodyParameters):
-            return "Body parameters could not be converted to a string: bodyParameters: \(bodyParameters)"
         case .bodyStringInvalid(let bodyString):
             return "Body string could not be converted to UTF-8 data: bodyString: \(bodyString)"
         case let .httpError(statusCode, errorString, urlString):

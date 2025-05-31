@@ -124,8 +124,9 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let request = try? await sut.buildRequest(with: endpoint)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/foo")
         XCTAssertEqual(request?.httpMethod, "PUT")
-        XCTAssertEqual(request?.httpBody, Data("body1=body1 value".utf8))
-        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json"])
+        XCTAssertEqual(request?.httpBody, Data("{\"body1\": \"body1 value\"}".utf8))
+        XCTAssertEqual(request?.allHTTPHeaderFields, ["Accept": "application/json",
+                                                      "Content-Type": "application/json; charset=utf-8"])
     }
 
     func testBuildRequestWithAcceptOverride() async throws {

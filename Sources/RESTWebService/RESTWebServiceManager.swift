@@ -135,17 +135,10 @@ extension RESTWebServiceManager {
             request.setValue(header.value, forHTTPHeaderField: header.key)
         }
 
-        if !endpoint.bodyParameters.isEmpty {
-            var bodyComponents = URLComponents()
-            bodyComponents.queryItems = endpoint.bodyParameters
-            guard let validQuery = bodyComponents.query else {
-                let error = RESTWebServiceError.bodyParametersInvalid(endpoint.bodyParameters)
-                logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
-                throw error
-            }
-
-            guard let validData = validQuery.data(using: .utf8) else {
-                let error = RESTWebServiceError.bodyStringInvalid(validQuery)
+        if let body = endpoint.body,
+           !body.isEmpty {
+            guard let validData = body.data(using: .utf8) else {
+                let error = RESTWebServiceError.bodyStringInvalid(body)
                 logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
                 throw error
             }
