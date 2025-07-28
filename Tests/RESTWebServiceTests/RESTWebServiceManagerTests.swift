@@ -86,17 +86,15 @@ final class RESTWebServiceManagerTests: XCTestCase {
         let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos()
         var models: [FoosModel] = []
-        var theError: Error!
         do {
             for try await page: FoosModel in sut.pageStream(with: endpoint, safetyLimit: 1) {
                 models.append(page)
             }
         } catch {
-            theError = error
+            XCTFail("pageStream threw error: \(error)")
         }
         XCTAssertEqual(models.count, 1)
         XCTAssertEqual(models.first, FoosModel.Presets.foos1)
-        XCTAssertNotNil(theError)
     }
 
     func testBuildRequestWithPathParams() async throws {

@@ -27,10 +27,7 @@ actor PageStreamActor {
 
     func unfoldingClosure<M>() async throws -> M? where M: Decodable & Pageable & Sendable {
         if let uSafetyLimit = safetyLimit {
-            guard receivedCount < uSafetyLimit else {
-                let failingURL = "\(baseURLString)/\(currentEndpoint.path)"
-                throw RESTWebServiceError.safetyLimitReached(failingURL)
-            }
+            guard receivedCount < uSafetyLimit else { return nil } // returning nil terminates stream
         }
 
         if let uTotalCount = totalCount {

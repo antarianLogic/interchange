@@ -15,7 +15,6 @@ public enum RESTWebServiceError: Error {
     case insufficientURLComponents(String)
     case bodyStringInvalid(String)
     case httpError(Int, String, String)
-    case safetyLimitReached(String)
     case decodingError(DecodingError, String, String, String?)
 }
 
@@ -35,8 +34,6 @@ extension RESTWebServiceError: Equatable {
             return lhsStatusCode == rhsStatusCode &&
                    lhsErrorString == rhsErrorString &&
                    lhsURLString == rhsURLString
-        case let (.safetyLimitReached(lhsURLString), .safetyLimitReached(rhsURLString)):
-            return lhsURLString == rhsURLString
         case let (.decodingError(_, lhsURLString, lhsReason, lhsCodingPath), .decodingError(_, rhsURLString, rhsReason, rhsCodingPath)):
             return lhsURLString == rhsURLString &&
                    lhsReason == rhsReason &&
@@ -61,8 +58,6 @@ extension RESTWebServiceError: CustomDebugStringConvertible {
             return "Body string could not be converted to UTF-8 data: bodyString: \(bodyString)"
         case let .httpError(statusCode, errorString, urlString):
             return "Received HTTP error code: \(statusCode) for URL: \(urlString). Raw result JSON: \"\(errorString)\""
-        case .safetyLimitReached(let urlString):
-            return "Safety limit reached for URL: \(urlString)"
         case let .decodingError(error, urlString, reason, codingPath):
             if let codingPath {
                 return "Decoding error for URL: \(urlString), reason: \(reason), coding-path: \(codingPath), error: \(String(reflecting: error))"
