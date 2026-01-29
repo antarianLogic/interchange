@@ -1,6 +1,6 @@
 //
 //  PageStreamActor.swift
-//  RESTWebService
+//  Interchange
 //
 //  Created by Carl Sheppard on 7/25/24.
 //  Copyright © 2024 Antarian Logic LLC. All rights reserved.
@@ -8,7 +8,7 @@
 
 actor PageStreamActor {
 
-    init(wsManager: RESTWebServiceManaging,
+    init(wsManager: InterchangeManaging,
          baseURLString: String,
          initialEndpoint: RESTEndpoint,
          safetyLimit: UInt? = nil) {
@@ -18,7 +18,7 @@ actor PageStreamActor {
         self.safetyLimit = safetyLimit
     }
 
-    let wsManager: RESTWebServiceManaging
+    let wsManager: InterchangeManaging
     let baseURLString: String
     var currentEndpoint: RESTEndpoint
     let safetyLimit: UInt?
@@ -36,7 +36,7 @@ actor PageStreamActor {
 
             guard let newEndpoint = currentEndpoint.nextPageEndpoint(at: receivedCount) else {
                 let failingURL = "\(baseURLString)/\(currentEndpoint.path)"
-                throw RESTWebServiceError.invalidRESTEndpoint(failingURL)
+                throw InterchangeError.invalidRESTEndpoint(failingURL)
             }
 
             currentEndpoint = newEndpoint

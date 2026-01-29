@@ -1,6 +1,6 @@
 //
-//  RESTWebServiceManager.swift
-//  RESTWebService
+//  InterchangeManager.swift
+//  Interchange
 //
 //  Created by Carl Sheppard on 1/15/21.
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
@@ -10,25 +10,25 @@ import Foundation
 import os
 import DateUtils
 
-/// The main RESTWebService object that handles web service requests for a given web service.
+/// The main Interchange object that handles web service requests for a given web service.
 ///
-/// `RESTWebServiceManager` is an actor that provides REST API operations with support for pagination, rate limiting, caching, and more.
+/// `InterchangeManager` is an actor that provides RESTful API operations with support for pagination, rate limiting, caching, and more.
 ///
 /// ## Overview
 ///
 /// Create one instance per API base URL and reuse it throughout your application.
 /// The actor ensures thread-safe access to shared state like rate limiting counters.
 ///
-/// See <doc:RESTWebService> and <doc:QuickStart> for more information.
+/// See <doc:Interchange> and <doc:QuickStart> for more information.
 ///
-public actor RESTWebServiceManager {
+public actor InterchangeManager {
 
     /// Creates a new manager instance for a specific API base URL.
     ///
     /// - Parameters:
     ///   - baseURL: Web API base URL. Includes everything common to all routes (e.g., `https://api.example.com/v1`) but without the parts specific to each endpoint. A trailing slash is not required.
     ///   - session: Optional URLSession to use for all requests. If omitted, `URLSession.shared` will be used. Provide a custom session for specialized configurations (authentication, certificates, custom caching, etc.).
-    ///   - rateLimitHeaders: Optional specification of API request headers used for rate limiting. If omitted, rate limiting will not be performed. See ``RESTRateLimitHeaders`` for configuration details. Also see See <doc:RESTWebService#Rate-Limiting-Support>.
+    ///   - rateLimitHeaders: Optional specification of API request headers used for rate limiting. If omitted, rate limiting will not be performed. See ``RESTRateLimitHeaders`` for configuration details. Also see See <doc:Interchange#Rate-Limiting-Support>.
     ///
     public init(baseURL: URL,
                 session: URLSession = URLSession.shared,
@@ -41,21 +41,21 @@ public actor RESTWebServiceManager {
     let baseURL: URL
     let session: URLSession
     let rateLimitHeaders: RESTRateLimitHeaders?
-    let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "RESTWebService", category: "Package")
+    let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Interchange", category: "Package")
     var prevRequestTime: Date = .distantPast
     var rateLimit: UInt64 = 0
     var rateLimitRemaining: UInt64 = .max
 }
 
-extension RESTWebServiceManager: RESTWebServiceManaging {
+extension InterchangeManager: InterchangeManaging {
 
     /// Performs a web service request asynchronously.
     ///
-    /// This method executes a REST API request and automatically decodes the JSON response into your specified model type.
+    /// This method executes a RESTful API request and automatically decodes the JSON response into your specified model type.
     ///
     /// - Parameter endpoint: Web service endpoint specification describing the request (path, method, headers, query parameters, etc.).
     /// - Returns: Decoded model object of type `M` conforming to `Decodable` and `Sendable`.
-    /// - Throws: ``RESTWebServiceError`` if the request fails, returns an HTTP error, or the response cannot be decoded.
+    /// - Throws: ``InterchangeError`` if the request fails, returns an HTTP error, or the response cannot be decoded.
     ///
     /// ## Behavior
     ///
@@ -68,7 +68,7 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
     ///
     /// ## HTTP Status Codes
     ///
-    /// Only status codes 200-203 are considered successful. Any other code (including 204 No Content) throws ``RESTWebServiceError/httpError(_:_:_:)``.
+    /// Only status codes 200-203 are considered successful. Any other code (including 204 No Content) throws ``InterchangeError/httpError(_:_:_:)``.
     ///
     /// ## Concurrency
     ///
@@ -102,8 +102,8 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
             guard httpResponse.statusCode >= 200 && httpResponse.statusCode < 204 else {
                 let errorString = String(data: data.prefix(1024), encoding: .utf8) ?? ""
                 let failingURL = request.url?.absoluteString ?? ""
-                let error = RESTWebServiceError.httpError(httpResponse.statusCode, errorString, failingURL)
-                logger.warning("In RESTWebServiceManager.sendRequest, HTTP error with status code: \(httpResponse.statusCode) – \(errorString, privacy: .public)")
+                let error = InterchangeError.httpError(httpResponse.statusCode, errorString, failingURL)
+                logger.warning("In InterchangeManager.sendRequest, HTTP error with status code: \(httpResponse.statusCode) – \(errorString, privacy: .public)")
                 throw error
             }
         }
@@ -153,14 +153,14 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
     }
 }
 
-extension RESTWebServiceManager {
+extension InterchangeManager {
 
     func buildRequest(with endpoint: RESTEndpoint) throws -> URLRequest {
 
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {
-            let error = RESTWebServiceError.invalidBaseURL(baseURL.absoluteString)
-            logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
+            let error = InterchangeError.invalidBaseURL(baseURL.absoluteString)
+            logger.error("In InterchangeManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
             throw error
         }
 
@@ -180,8 +180,8 @@ extension RESTWebServiceManager {
         }
 
         guard let url = validComponents.url else {
-            let error = RESTWebServiceError.insufficientURLComponents(validComponents.description)
-            logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
+            let error = InterchangeError.insufficientURLComponents(validComponents.description)
+            logger.error("In InterchangeManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
             throw error
         }
 
@@ -195,8 +195,8 @@ extension RESTWebServiceManager {
         if let body = endpoint.body,
            !body.isEmpty {
             guard let validData = body.data(using: .utf8) else {
-                let error = RESTWebServiceError.bodyStringInvalid(body)
-                logger.error("In RESTWebServiceManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
+                let error = InterchangeError.bodyStringInvalid(body)
+                logger.error("In InterchangeManager.buildRequest, error: \(String(reflecting: error), privacy: .public)")
                 throw error
             }
 
@@ -222,35 +222,35 @@ extension RESTWebServiceManager {
         return request
     }
 
-    func buildErrorAndLog(decodingError: DecodingError, urlString: String) -> RESTWebServiceError {
+    func buildErrorAndLog(decodingError: DecodingError, urlString: String) -> InterchangeError {
         var reason: String = ""
         var codingPathString: String?
         switch decodingError {
         case let .typeMismatch(type, context):
             let codingPath = context.codingPath.map { $0.stringValue }
             codingPathString = codingPath.joined(separator: ".")
-            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, \(type) type mismatch – \(String(reflecting: context), privacy: .public)")
+            logger.warning("In InterchangeManager.sendRequest, JSON decoding error, \(type) type mismatch – \(String(reflecting: context), privacy: .public)")
             reason = "\(type) type mismatch"
         case let .valueNotFound(type, context):
             let codingPath = context.codingPath.map { $0.stringValue }
             codingPathString = codingPath.joined(separator: ".")
-            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing \(type) value – \(String(reflecting: context), privacy: .public)")
+            logger.warning("In InterchangeManager.sendRequest, JSON decoding error, missing \(type) value – \(String(reflecting: context), privacy: .public)")
             reason = "missing \(type) value"
         case let .keyNotFound(key, context):
             let codingPath = context.codingPath.map { $0.stringValue }
             codingPathString = codingPath.joined(separator: ".")
-            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, missing key '\(key.stringValue, privacy: .public)' not found – \(String(reflecting: context), privacy: .public)")
+            logger.warning("In InterchangeManager.sendRequest, JSON decoding error, missing key '\(key.stringValue, privacy: .public)' not found – \(String(reflecting: context), privacy: .public)")
             reason = "missing key: \(key.stringValue)"
         case let .dataCorrupted(context):
             let codingPath = context.codingPath.map { $0.stringValue }
             codingPathString = codingPath.joined(separator: ".")
-            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, invalid JSON = \(String(reflecting: context), privacy: .public)")
+            logger.warning("In InterchangeManager.sendRequest, JSON decoding error, invalid JSON = \(String(reflecting: context), privacy: .public)")
             reason = "invalid JSON"
         @unknown default:
-            logger.warning("In RESTWebServiceManager.sendRequest, JSON decoding error, unknown error: \(String(reflecting: decodingError), privacy: .public)")
+            logger.warning("In InterchangeManager.sendRequest, JSON decoding error, unknown error: \(String(reflecting: decodingError), privacy: .public)")
             reason = "unknown"
         }
-        return RESTWebServiceError.decodingError(decodingError, urlString, reason, codingPathString)
+        return InterchangeError.decodingError(decodingError, urlString, reason, codingPathString)
     }
 
     func performRateLimiting() async {
@@ -266,14 +266,14 @@ extension RESTWebServiceManager {
         let waitNanoseconds = UInt64(1_000_000_000.0 * actualWaitInterval)
         let capturedRateLimit = rateLimit
         let capturedRateLimitRemaining = rateLimitRemaining
-        logger.info("In RESTWebServiceManager.performRateLimiting, rateLimit: \(capturedRateLimit), rateLimitRemaining: \(capturedRateLimitRemaining), waiting \(waitNanoseconds) nanoseconds...")
+        logger.info("In InterchangeManager.performRateLimiting, rateLimit: \(capturedRateLimit), rateLimitRemaining: \(capturedRateLimitRemaining), waiting \(waitNanoseconds) nanoseconds...")
         try? await Task.sleep(nanoseconds: waitNanoseconds)
     }
 }
 
 /// Configuration for API rate limiting based on HTTP response headers.
 ///
-/// Many REST APIs include rate limit information in response headers.
+/// Many RESTful APIs include rate limit information in response headers.
 /// This struct specifies which header names to look for so the manager
 /// can automatically throttle requests to stay within limits.
 ///

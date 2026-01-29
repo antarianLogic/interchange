@@ -1,6 +1,6 @@
 //
 //  RESTEndpoint.swift
-//  RESTWebService
+//  Interchange
 //
 //  Created by Carl Sheppard on 1/15/21.
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
@@ -10,9 +10,9 @@ import Foundation
 
 /// Web service endpoint specification.
 ///
-/// `RESTEndpoint` encapsulates all the information needed to make a REST API request, including the HTTP method, path, headers, query parameters, and optional features like pagination, caching, and timeouts.
+/// `RESTEndpoint` encapsulates all the information needed to make a RESTful API request, including the HTTP method, path, headers, query parameters, and optional features like pagination, caching, and timeouts.
 ///
-/// See <doc:RESTWebService> and <doc:QuickStart> for more information.
+/// See <doc:Interchange> and <doc:QuickStart> for more information.
 ///
 public struct RESTEndpoint: Sendable {
 
@@ -23,7 +23,7 @@ public struct RESTEndpoint: Sendable {
     ///
     /// Example: `/search` or `/users/123`
     ///
-    /// This is appended to the base URL configured in ``RESTWebServiceManager``.
+    /// This is appended to the base URL configured in ``InterchangeManager``.
     ///
     public let path: String
 
@@ -102,7 +102,7 @@ public struct RESTEndpoint: Sendable {
     ///
     public let timeoutInterval: TimeInterval?
 
-    /// Creates a REST endpoint specification.
+    /// Creates an endpoint specification.
     ///
     /// - Parameters:
     ///   - method: HTTP method to use. Defaults to `.get`.

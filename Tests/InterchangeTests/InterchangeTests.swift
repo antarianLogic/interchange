@@ -1,6 +1,6 @@
 //
-//  RESTWebServiceManagerTests.swift
-//  RESTWebServiceTests
+//  InterchangeManagerTests.swift
+//  InterchangeTests
 //
 //  Created by Carl Sheppard on 1/15/21.
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
@@ -8,37 +8,37 @@
 
 import XCTest
 import Mocker
-@testable import RESTWebService
+@testable import Interchange
 
-final class RESTWebServiceManagerTests: XCTestCase {
+final class InterchangeManagerTests: XCTestCase {
 
     override class func setUp() {
         Mock.registerAll()
     }
 
     func testGetWithPathParams() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.subpath)
         let endpoint = FooBarEndpoints.getFoo(input: "123")
         let model: FooModel = try await sut.sendRequest(with: endpoint)
         XCTAssertEqual(model, FooModel.Presets.foo)
     }
 
     func testGetWithQueryParams() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getBar(inputs: ["234", "345"])
         let model: BarModel = try await sut.sendRequest(with: endpoint)
         XCTAssertEqual(model, BarModel.Presets.bar)
     }
 
     func testPutWithBodyParams() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.putFoo()
         let model: FooModel = try await sut.sendRequest(with: endpoint)
         XCTAssertEqual(model, FooModel.Presets.foo)
     }
 
     func testHTTPError() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.invalid)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.invalid)
         let endpoint = FooBarEndpoints.getFoo(input: "123")
         do {
             let _: FooModel = try await sut.sendRequest(with: endpoint)
@@ -51,7 +51,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     func testGetWithRateLimiting() async throws {
         let rateLimitHeaders = RESTRateLimitHeaders(rateLimitKey: "RateLimit",
                                                     rateLimitRemainingKey: "RateLimitRemaining")
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath,
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.subpath,
                                         rateLimitHeaders: rateLimitHeaders)
         let endpoint = FooBarEndpoints.getFoo2(input: "456")
         measure {
@@ -67,7 +67,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     // TODO: figure out how to test cacheInterval and timeoutInterval
 
     func testGetAllPages() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos()
         var models: [FoosModel] = []
         do {
@@ -83,7 +83,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testGetAllPagesWithSafetyLimit() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos()
         var models: [FoosModel] = []
         do {
@@ -98,7 +98,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testBuildRequestWithPathParams() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.subpath)
         let endpoint = FooBarEndpoints.getFoo(input: "123")
         let request = try? await sut.buildRequest(with: endpoint)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/subpath/foo/123")
@@ -107,7 +107,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testBuildRequestWithQueryParams() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getBar(inputs: ["234","345"])
         let request = try? await sut.buildRequest(with: endpoint)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/bar?inputs=234,345")
@@ -117,7 +117,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testBuildRequestWithBodyParams() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.putFoo()
         let request = try? await sut.buildRequest(with: endpoint)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/foo")
@@ -128,7 +128,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testBuildRequestWithAcceptOverride() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.subpath)
         let endpoint = FooBarEndpoints.getFooXML(input: "456")
         let request = try? await sut.buildRequest(with: endpoint)
         XCTAssertEqual(request?.url?.absoluteString, "https://example.com/subpath/foo/456")
@@ -137,7 +137,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testPerformRateLimiting() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.subpath)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.subpath)
         measure {
             let exp = expectation(description: "testPerformRateLimiting")
             Task {
@@ -149,7 +149,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testPageStreamIterator() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos()
         let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: endpoint, safetyLimit: 1000)
         var page1: FoosModel!
@@ -177,7 +177,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testPageStreamIteratorDoneFirstPass() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos3()
         let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: endpoint, safetyLimit: 1000)
         var page1: FoosModel!
@@ -198,7 +198,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testPageStreamIteratorWithPageQueryItem() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos4()
         let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: endpoint, safetyLimit: 1000)
         var page1: FoosModel!
@@ -226,7 +226,7 @@ final class RESTWebServiceManagerTests: XCTestCase {
     }
 
     func testPageStreamIteratorWithPageQueryItemDoneFirstPass() async throws {
-        let sut = RESTWebServiceManager(baseURL: URL.BaseURLPresets.base)
+        let sut = InterchangeManager(baseURL: URL.BaseURLPresets.base)
         let endpoint = FooBarEndpoints.getFoos6()
         let stream: AsyncThrowingStream<FoosModel,Error> = sut.pageStream(with: endpoint, safetyLimit: 1000)
         var page1: FoosModel!

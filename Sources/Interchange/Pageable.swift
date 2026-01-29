@@ -1,6 +1,6 @@
 //
 //  Pageable.swift
-//  RESTWebService
+//  Interchange
 //  
 //  Created by Carl Sheppard on 2/5/21.
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
@@ -8,7 +8,7 @@
 
 /// A protocol that identifies the items and statistics in a response page.
 ///
-/// Conform your response models to this protocol to enable automatic pagination when using ``RESTWebServiceManager/pageStream(with:safetyLimit:)``.
+/// Conform your response models to this protocol to enable automatic pagination when using ``InterchangeManager/pageStream(with:safetyLimit:)``.
 ///
 public protocol Pageable {
 

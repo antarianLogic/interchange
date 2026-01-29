@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get up and running quickly with RESTWebService
+Get up and running quickly with Interchange
 
 ## Installation
 
@@ -16,18 +16,18 @@ Add this dependency line to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/antarianLogic/rest-web-service", from: "1.0.0")
+    .package(url: "https://github.com/antarianLogic/interchange", from: "1.0.0")
 ]
 ```
 
 ## Basic Usage (GET Requests)
 
 ```swift
-import RESTWebService
+import Interchange
 
 // 1. Create manager
 guard let url = URL(string: "https://jsonplaceholder.typicode.com") else { return }
-let manager = RESTWebServiceManager(baseURL: url)
+let manager = InterchangeManager(baseURL: url)
 
 // 2. Define output model
 struct Post: Codable, Sendable {
@@ -86,11 +86,11 @@ let endpoint = RESTEndpoint(method: .get,
 ### POST/PUT/PATCH Requests
 
 ```swift
-import RESTWebService
+import Interchange
 
 // 1. Create manager
 guard let url = URL(string: "https://jsonplaceholder.typicode.com") else { return }
-let manager = RESTWebServiceManager(baseURL: url)
+let manager = InterchangeManager(baseURL: url)
 
 // 2. Define body model and encode data
 struct Body: Codable, Sendable {
@@ -161,7 +161,7 @@ for try await page in manager.pageStream(with: endpoint) as AsyncThrowingStream<
 }
 ```
 
-See see <doc:RESTWebService#Multipage-Requests> in the main documentation for more.
+See see <doc:Interchange#Multipage-Requests> in the main documentation for more.
 
 ### Rate Limiting Support
 
@@ -169,12 +169,12 @@ See see <doc:RESTWebService#Multipage-Requests> in the main documentation for mo
 // Use whatever rate limit keys which are defined by the particular service
 let rlHeaders = RESTRateLimitHeaders(rateLimitKey: "X-RateLimit-Limit",
                                      rateLimitRemainingKey: "X-RateLimit-Remaining")
-let manager = RESTWebServiceManager(baseURL: url,
+let manager = InterchangeManager(baseURL: url,
                                     rateLimitHeaders: rlHeaders)
 // Requests will automatically throttle as you approach limits
 ```
 
-See see <doc:RESTWebService#Rate-Limiting-Support> in the main documentation for more.
+See see <doc:Interchange#Rate-Limiting-Support> in the main documentation for more.
 
 ### Caching
 
@@ -191,7 +191,7 @@ let endpoint = RESTEndpoint(method: .get,
 do {
     let data: MyModel = try await manager.sendRequest(with: endpoint)
     // Use data...
-} catch let error as RESTWebServiceError {
+} catch let error as InterchangeError {
     switch error {
     case .httpError(let code, let message, _):
         print("HTTP \(code): \(message)")
@@ -205,10 +205,10 @@ do {
 }
 ```
 
-See see <doc:RESTWebService#Error-Handling> in the main documentation for more.
+See see <doc:Interchange#Error-Handling> in the main documentation for more.
 
 ## Next Steps
 
-- 📚 [Full Documentation](<doc:RESTWebService>)
-- 🐛 [Report Issues](https://github.com/antarianLogic/rest-web-service/issues)
-- 💬 [Ask Questions](https://github.com/antarianLogic/rest-web-service/discussions)
+- 📚 [Full Documentation](<doc:Interchange>)
+- 🐛 [Report Issues](https://github.com/antarianLogic/interchange/issues)
+- 💬 [Ask Questions](https://github.com/antarianLogic/interchange/discussions)

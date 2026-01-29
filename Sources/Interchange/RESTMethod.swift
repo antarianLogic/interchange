@@ -1,6 +1,6 @@
 //
 //  RESTMethod.swift
-//  RESTWebService
+//  Interchange
 //
 //  Created by Carl Sheppard on 2/10/22.
 //  Copyright © 2022 Antarian Logic LLC. All rights reserved.
@@ -24,13 +24,13 @@ public enum RESTMethod: String, Sendable {
     /// Remove a resource from the server.
     case delete = "DELETE"
 
-    /// Establish a network connection (rarely used in REST APIs).
+    /// Establish a network connection (rarely used in RESTful APIs).
     case connect = "CONNECT"
 
     /// Request information about available communication options.
     case options = "OPTIONS"
 
-    /// Perform a message loop-back test (rarely used in REST APIs).
+    /// Perform a message loop-back test (rarely used in RESTful APIs).
     case trace = "TRACE"
 
     /// Partially update an existing resource.

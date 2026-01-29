@@ -1,16 +1,16 @@
-# ``RESTWebService``
+# ``Interchange``
 
 A lightweight Swift package for interacting concurrently with RESTful web APIs using declarative endpoint specifications and returning decoded Codable types, with support for pagination, rate limiting, and more
 
 ## Overview
 
-A ``RESTWebServiceManager`` uses [URLSession](https://developer.apple.com/documentation/foundation/urlsession) to make [Swift Concurrent](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency) requests to [RESTful](https://en.wikipedia.org/wiki/Representational_state_transfer) web APIs.
+A ``InterchangeManager`` uses [URLSession](https://developer.apple.com/documentation/foundation/urlsession) to make [Swift Concurrent](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency) requests to [RESTful](https://en.wikipedia.org/wiki/Representational_state_transfer) web APIs.
 
 A ``RESTEndpoint`` struct is used to define the specifications of specific endpoints.
 The individual `RESTEndpoint` structs would ideally be preconfigured with static convenience initializers defined elsewhere such as in a separate package.
 
 The results are decoded asynchronously from the JSON response and returned.
-The specific [Decodable](https://developer.apple.com/documentation/swift/decodable) type to be output is specified by the caller as the concrete return type in ``RESTWebServiceManager/sendRequest(with:)`` or ``RESTWebServiceManager/pageStream(with:safetyLimit:)``.
+The specific [Decodable](https://developer.apple.com/documentation/swift/decodable) type to be output is specified by the caller as the concrete return type in ``InterchangeManager/sendRequest(with:)`` or ``InterchangeManager/pageStream(with:safetyLimit:)``.
 
 #### Quick Start Guide
 
@@ -18,20 +18,20 @@ To jump right in, see the <doc:QuickStart>.
 
 ### Initialization
 
-The client initializes one ``RESTWebServiceManager`` per web service with a base URL using ``RESTWebServiceManager/init(baseURL:session:rateLimitHeaders:)``.
+The client initializes one ``InterchangeManager`` per web service with a base URL using ``InterchangeManager/init(baseURL:session:rateLimitHeaders:)``.
 
 #### Example
 
 ```swift
 let url = URL(string: "https://example.com")!
-let wsManager = RESTWebServiceManager(baseURL: url)
+let wsManager = InterchangeManager(baseURL: url)
 ```
 
-Also the `URLSession` can optionally be injected (see <doc:RESTWebService#URLSession-Injection>) and rate-limiting headers can be specified (see <doc:RESTWebService#Rate-Limiting-Support>).
+Also the `URLSession` can optionally be injected (see <doc:Interchange#URLSession-Injection>) and rate-limiting headers can be specified (see <doc:Interchange#Rate-Limiting-Support>).
 
 ### One-shot Requests
 
-For single-page requests, use ``RESTWebServiceManager/sendRequest(with:)``, passing a endpoint specification of type ``RESTEndpoint`` and specifying the `Decodable` type to return.
+For single-page requests, use ``InterchangeManager/sendRequest(with:)``, passing a endpoint specification of type ``RESTEndpoint`` and specifying the `Decodable` type to return.
 
 #### Example
 
@@ -47,13 +47,13 @@ do {
 
 ### Multipage Requests
 
-For endpoints that return multipage responses, ``RESTWebServiceManager/pageStream(with:safetyLimit:)`` can be used to immediately return an [AsyncThrowingStream](https://developer.apple.com/documentation/swift/asyncthrowingstream) that can be iterated asynchronously to retrieve each page.
+For endpoints that return multipage responses, ``InterchangeManager/pageStream(with:safetyLimit:)`` can be used to immediately return an [AsyncThrowingStream](https://developer.apple.com/documentation/swift/asyncthrowingstream) that can be iterated asynchronously to retrieve each page.
 An optional safety limit count can be passed to insure the iterator won't be infinite or if only a limited number of pages are desired.
 The `Decodable` type must also conform to ``Pageable``.
 
 #### Offset vs. Page Number
 
-RESTWebService supports both offset-based and page-number-based pagination:
+Interchange supports both offset-based and page-number-based pagination:
 
 **Offset-based** (common in modern APIs):
 ```swift
@@ -102,13 +102,13 @@ do {
 
 ### URLSession Injection
 
-`RESTWebServiceManager` uses the shared `URLSession` by default but clients can optionally inject their own `URLSession` instead during initialization.
-See ``RESTWebServiceManager/init(baseURL:session:rateLimitHeaders:)``.
+`InterchangeManager` uses the shared `URLSession` by default but clients can optionally inject their own `URLSession` instead during initialization.
+See ``InterchangeManager/init(baseURL:session:rateLimitHeaders:)``.
 
 ### Rate Limiting Support
 
 Many web APIs enforce rate limits to prevent abuse.
-If the endpoint supports rate-limiting statistics in the response headers, RESTWebService can automatically respect these limits by reading the rate limit headers and throttling the requests.
+If the endpoint supports rate-limiting statistics in the response headers, Interchange can automatically respect these limits by reading the rate limit headers and throttling the requests.
 
 #### Configuration
 
@@ -117,7 +117,7 @@ Enable and configure rate limiting by providing the header names your API uses:
 ```swift
 let rlHeaders = RESTRateLimitHeaders(rateLimitKey: "X-RateLimit-Limit",
                                      rateLimitRemainingKey: "X-RateLimit-Remaining")
-let manager = RESTWebServiceManager(baseURL: url,
+let manager = InterchangeManager(baseURL: url,
                                     rateLimitHeaders: rlHeaders)
 ```
 
@@ -137,11 +137,11 @@ This should help minimize the times the calls fail outright due to rate limit vi
 But as a tradeoff, keep in mind it might lead to some noticeable delay when `rateLimitRemaining` gets really low.
 A delay is usually a better user experience than a failure though.
 
-See ``RESTWebServiceManager/init(baseURL:session:rateLimitHeaders:)``.
+See ``InterchangeManager/init(baseURL:session:rateLimitHeaders:)``.
 
 ### Error Handling
 
-All errors thrown are of type ``RESTWebServiceError`` enum.
+All errors thrown are of type ``InterchangeError`` enum.
 Some of the error enum cases contain the lower-level error in associated data.
 All cases have a `debugDescription` which is suitable for logging.
 
@@ -149,15 +149,15 @@ All cases have a `debugDescription` which is suitable for logging.
 
 #### Mocking
 
-``RESTWebServiceManager`` conforms to ``RESTWebServiceManaging`` and thus can be injected and mocked.
-In fact there already is a ``MockRESTWebServiceManager`` for your convenience.
+``InterchangeManager`` conforms to ``InterchangeManaging`` and thus can be injected and mocked.
+In fact there already is a ``MockInterchangeManager`` for your convenience.
 
 #### External Testing
 
 ```swift
 @Test func testDataLoading() async throws {
     // Create a mock service manager for testing
-    let mockManager = MockRESTWebServiceManager()
+    let mockManager = MockInterchangeManager()
     let item = Item(id: 1, name: "Test")
     await mockManager.pushMockData(item)
     ...
@@ -169,17 +169,17 @@ In fact there already is a ``MockRESTWebServiceManager`` for your convenience.
 
 #### Internal Testing
 
-See `RESTWebServiceManagerTests` under the `Tests/RESTWebServiceTests` group in Xcode for many examples.
-The Mock framework is used in the tests to bypass the internet but they still use a real RESTWebServiceManager.
+See `InterchangeManagerTests` under the `Tests/InterchangeTests` group in Xcode for many examples.
+The Mock framework is used in the tests to bypass the internet but they still use a real InterchangeManager.
 Create a preset in MockHelpers.swift and add it to registerAll().
 
 ## Topics
 
 ### Initializers
 
-- ``RESTWebServiceManager/init(baseURL:session:rateLimitHeaders:)``
+- ``InterchangeManager/init(baseURL:session:rateLimitHeaders:)``
 
 ### Making Requests
 
-- ``RESTWebServiceManager/sendRequest(with:)``
-- ``RESTWebServiceManager/pageStream(with:safetyLimit:)``
+- ``InterchangeManager/sendRequest(with:)``
+- ``InterchangeManager/pageStream(with:safetyLimit:)``

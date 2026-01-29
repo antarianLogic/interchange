@@ -1,13 +1,13 @@
 //
 //  TestModels.swift
-//  RESTWebServiceTests
+//  InterchangeTests
 //
 //  Created by Carl Sheppard on 2/12/21.
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
 import Foundation
-@testable import RESTWebService
+@testable import Interchange
 
 struct FooModel: Codable, Equatable {
     let name: String

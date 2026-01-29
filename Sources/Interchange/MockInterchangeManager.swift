@@ -1,18 +1,18 @@
 //
-//  MockRESTWebServiceManager.swift
-//  RESTWebService
+//  MockInterchangeManager.swift
+//  Interchange
 //
 //  Created by Carl Sheppard on 1/29/21.
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
-/// An object conforming to RESTWebServiceManaging that can be injected in testing or preview code as a benign alternative to a real RESTWebServiceManager.
+/// An object conforming to InterchangeManaging that can be injected in testing or preview code as a benign alternative to a real InterchangeManager.
 ///
-/// See <doc:RESTWebService#Testing> for more information.
+/// See <doc:Interchange#Testing> for more information.
 ///
-public actor MockRESTWebServiceManager {
+public actor MockInterchangeManager {
 
-    /// Creates a new mock RESTWebServiceManager.
+    /// Creates a new mock InterchangeManager.
     ///
     /// - Parameter shouldFail: Flag to allow simulation of request failures.
     ///
@@ -41,13 +41,13 @@ public actor MockRESTWebServiceManager {
     let shouldFail: Bool
 }
 
-extension MockRESTWebServiceManager: RESTWebServiceManaging {
+extension MockInterchangeManager: InterchangeManaging {
 
     /// Simulates an asynchronous web API request by simply sleeping for a short time.
     ///
-    /// - Parameter endpoint: Endpoint specification as required by `RESTWebServiceManaging`. It is ignored by this implementation. Pass any value.
+    /// - Parameter endpoint: Endpoint specification as required by `InterchangeManaging`. It is ignored by this implementation. Pass any value.
     /// - Returns: The data currently at the top of the stack that was pushed previously with ``pushMockData(_:)``.
-    /// - Throws: ``RESTWebServiceError``of value `.httpError` and code 404 if `shouldFail` is true.
+    /// - Throws: ``InterchangeError``of value `.httpError` and code 404 if `shouldFail` is true.
     ///
     /// ## Preconditions
     ///
@@ -62,7 +62,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         try await Task.sleep(nanoseconds: 10)
 
         guard !shouldFail else {
-            throw RESTWebServiceError.httpError(404, "404 Not Found", "http://example.com")
+            throw InterchangeError.httpError(404, "404 Not Found", "http://example.com")
         }
 
         guard let model = mockData.popLast() as? M else { fatalError() }
@@ -73,7 +73,7 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
     /// Simulates multipage web service requests by returning a stream that can be iterated on to yield each page of results until all data has been retrieved or `shouldFail` is true.
     ///
     /// - Parameters:
-    ///   - initialEndpoint: Endpoint specification as required by `RESTWebServiceManaging`. It is ignored by this implementation. Pass any value.
+    ///   - initialEndpoint: Endpoint specification as required by `InterchangeManaging`. It is ignored by this implementation. Pass any value.
     ///   - safetyLimit: Optional maximum number of pages to retrieve. If `nil`, continues until all pages are retrieved.
     /// - Returns: `AsyncThrowingStream` that yields page objects of type `M`.
     ///

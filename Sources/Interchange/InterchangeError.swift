@@ -1,6 +1,6 @@
 //
-//  RESTWebServiceError.swift
-//  RESTWebService
+//  InterchangeError.swift
+//  Interchange
 //
 //  Created by Carl Sheppard on 1/21/21.
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
@@ -8,15 +8,15 @@
 
 import Foundation
 
-/// Errors that can occur during REST web service operations.
+/// Errors that can occur during web service operations.
 ///
 /// These errors provide detailed information about what went wrong during a web service request, including URL context, HTTP status codes, and decoding failures.
 ///
-/// See <doc:RESTWebService#Error-Handling> in the main documentation and <doc:QuickStart#Error-Handling> in the Quick Start Guide for more information.
+/// See <doc:Interchange#Error-Handling> in the main documentation and <doc:QuickStart#Error-Handling> in the Quick Start Guide for more information.
 ///
-public enum RESTWebServiceError: Error {
+public enum InterchangeError: Error {
 
-    /// The REST endpoint specification is invalid or incomplete.
+    /// The endpoint specification is invalid or incomplete.
     ///
     /// - Parameter urlString: The URL that could not be constructed from the endpoint.
     case invalidRESTEndpoint(String)
@@ -54,7 +54,7 @@ public enum RESTWebServiceError: Error {
     case decodingError(DecodingError, String, String, String?)
 }
 
-extension RESTWebServiceError: Equatable {
+extension InterchangeError: Equatable {
 
     public static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
@@ -80,12 +80,12 @@ extension RESTWebServiceError: Equatable {
     }
 }
 
-extension RESTWebServiceError: CustomDebugStringConvertible {
+extension InterchangeError: CustomDebugStringConvertible {
 
     public var debugDescription: String {
         switch self {
         case .invalidRESTEndpoint(let urlString):
-            return "Invalid REST endpoint specification for URL: \(urlString)"
+            return "Invalid endpoint specification for URL: \(urlString)"
         case .invalidBaseURL(let urlString):
             return "Invalid base URL: \(urlString)"
         case .insufficientURLComponents(let componentsString):

@@ -1,4 +1,4 @@
-# RESTWebService
+# Interchange
 
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-iOS%20%7C%20macOS-blue.svg)](https://developer.apple.com)
@@ -28,11 +28,11 @@
 
 ## Quick Start
 
-To jump right in, see the [Quick Start Guide](Sources/RESTWebService/RESTWebService.docc/QuickStart.md).
+To jump right in, see the [Quick Start Guide](Sources/Interchange/Interchange.docc/QuickStart.md).
 
 ## Full Documentation
 
-The full documentation is here: [RESTWebService](Sources/RESTWebService/RESTWebService.docc/RESTWebService.md).
+The full documentation is here: [Interchange](Sources/Interchange/Interchange.docc/Interchange.md).
 
 ## Contributing
 
@@ -53,6 +53,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- 📫 Report issues on [GitHub Issues](https://github.com/antarianLogic/rest-web-service/issues)
-- 💬 Ask questions in [GitHub Discussions](https://github.com/antarianLogic/rest-web-service/discussions)
+- 📫 Report issues on [GitHub Issues](https://github.com/antarianLogic/interchange/issues)
+- 💬 Ask questions in [GitHub Discussions](https://github.com/antarianLogic/interchange/discussions)
 - ⭐ Star the repo if you find it useful!

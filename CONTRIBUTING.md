@@ -1,6 +1,6 @@
-# Contributing to RESTWebService
+# Contributing to Interchange
 
-If you have interest in contributing to RESTWebService, thank you! This document provides guidelines and instructions for contributing.
+If you have interest in contributing to Interchange, thank you! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 
@@ -130,8 +130,8 @@ Contributors will be acknowledged in:
 
 ## License
 
-By contributing to RESTWebService, you agree that your contributions will be licensed under the MIT License.
+By contributing to Interchange, you agree that your contributions will be licensed under the MIT License.
 
 ---
 
-Thank you for contributing to RESTWebService! 🎉
+Thank you for contributing to Interchange! 🎉
