@@ -3,15 +3,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "rest-web-service",
+    name: "interchange",
     platforms: [
         .iOS(.v15),
         .macOS(.v12)
     ],
     products: [
         .library(
-            name: "RESTWebService",
-            targets: ["RESTWebService"]),
+            name: "Interchange",
+            targets: ["Interchange"]),
     ],
     dependencies: [
         .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0"),
@@ -19,11 +19,11 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "RESTWebService",
+            name: "Interchange",
             dependencies: [.product(name: "DateUtils", package: "date-utils")]
         ),
         .testTarget(
-            name: "RESTWebServiceTests",
-            dependencies: ["RESTWebService", "Mocker"]),
+            name: "InterchangeTests",
+            dependencies: ["Interchange", "Mocker"]),
     ]
 )
