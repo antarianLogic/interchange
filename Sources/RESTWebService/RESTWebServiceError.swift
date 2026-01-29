@@ -8,13 +8,49 @@
 
 import Foundation
 
+/// Errors that can occur during REST web service operations.
+///
+/// These errors provide detailed information about what went wrong during a web service request, including URL context, HTTP status codes, and decoding failures.
+///
+/// See <doc:RESTWebService#Error-Handling> in the main documentation and <doc:QuickStart#Error-Handling> in the Quick Start Guide for more information.
+///
 public enum RESTWebServiceError: Error {
 
+    /// The REST endpoint specification is invalid or incomplete.
+    ///
+    /// - Parameter urlString: The URL that could not be constructed from the endpoint.
     case invalidRESTEndpoint(String)
+    
+    /// The base URL provided to the manager is invalid.
+    ///
+    /// - Parameter urlString: The invalid base URL string.
     case invalidBaseURL(String)
+    
+    /// The URL components could not be combined to form a valid URL.
+    ///
+    /// - Parameter componentsDescription: Description of the URL components.
     case insufficientURLComponents(String)
+    
+    /// The request body string could not be converted to UTF-8 data.
+    ///
+    /// - Parameter bodyString: The body string that failed to convert.
     case bodyStringInvalid(String)
+    
+    /// The server returned an HTTP error status code (outside the 200-203 range).
+    ///
+    /// - Parameters:
+    ///   - statusCode: The HTTP status code (e.g., 404, 500).
+    ///   - errorString: The raw response body (first 1024 bytes).
+    ///   - urlString: The URL that returned the error.
     case httpError(Int, String, String)
+    
+    /// Failed to decode the JSON response into the expected model type.
+    ///
+    /// - Parameters:
+    ///   - decodingError: The underlying `DecodingError`.
+    ///   - urlString: The URL of the request.
+    ///   - reason: Human-readable description of the failure.
+    ///   - codingPath: The JSON key path where decoding failed, if available.
     case decodingError(DecodingError, String, String, String?)
 }
 

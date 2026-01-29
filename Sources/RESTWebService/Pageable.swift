@@ -7,13 +7,27 @@
 //
 
 /// A protocol that identifies the items and statistics in a response page.
+///
+/// Conform your response models to this protocol to enable automatic pagination when using ``RESTWebServiceManager/pageStream(with:safetyLimit:)``.
+///
 public protocol Pageable {
 
+    /// The type of items contained in each page.
     associatedtype Submodel
 
+    /// The total number of items available across all pages.
+    ///
+    /// This is used to determine when pagination is complete.
     var totalCount: UInt { get }
 
+    /// The current offset (starting position) of items in this page.
+    ///
+    /// For the first page, this is typically 0. For subsequent pages,
+    /// it increases by the page size.
     var currentOffset: UInt { get }
 
+    /// The array of items contained in this page.
+    ///
+    /// The count of items in this array is used to calculate the next offset.
     var submodels: [Submodel] { get }
 }

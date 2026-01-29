@@ -6,10 +6,25 @@
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
+/// Protocol defining the core functionality of a REST web service manager.
+///
+/// This protocol allows injection so you can use alternate implementations such as mocks for testing.
+///
 public protocol RESTWebServiceManaging: Actor {
 
+    /// Performs a web API request asynchronously.
+    /// - Parameter endpoint: The endpoint specification describing the request.
+    /// - Returns: A decoded model object of type `M`.
+    /// - Throws: ``RESTWebServiceError`` if the request fails or decoding fails.
+    ///
     func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable & Sendable
 
+    /// Creates an async stream for iterating through paginated responses.
+    /// - Parameters:
+    ///   - initialEndpoint: The endpoint for the first page request.
+    ///   - safetyLimit: Optional maximum number of pages to retrieve.
+    /// - Returns: An `AsyncThrowingStream` that the caller can iterate though to yield each page.
+    ///
     nonisolated func pageStream<M>(with initialEndpoint: RESTEndpoint,
-                       safetyLimit: UInt?) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable
+                                   safetyLimit: UInt?) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable
 }

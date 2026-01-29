@@ -9,38 +9,113 @@
 import Foundation
 
 /// Web service endpoint specification.
+///
+/// `RESTEndpoint` encapsulates all the information needed to make a REST API request, including the HTTP method, path, headers, query parameters, and optional features like pagination, caching, and timeouts.
+///
+/// See <doc:RESTWebService> and <doc:QuickStart> for more information.
+///
 public struct RESTEndpoint: Sendable {
 
     /// HTTP method (or verb). For example, GET, POST, DELETE, etc.
     public let method: RESTMethod
 
-    /// Route path.
+    /// Route path relative to the base URL.
+    ///
+    /// Example: `/search` or `/users/123`
+    ///
+    /// This is appended to the base URL configured in ``RESTWebServiceManager``.
+    ///
     public let path: String
 
-    /// HTTP Headers.
+    /// A string valued dictionary representing the HTTP headers to include in the request.
+    ///
+    /// Common headers include `Authorization`, `Content-Type`, `Accept`, etc.
+    ///
+    /// Example:
+    /// ```swift
+    /// ["Authorization": "Bearer token123",
+    ///  "Content-Type": "application/json"]
+    /// ```
     public let headers: [String : String]
 
-    /// URL query parameters.
+    /// An array of URLQueryItem representing the URL query parameters to append to the path.
+    ///
+    /// These will be URL-encoded and appended after a `?` in the final URL.
+    ///
+    /// Example:
+    /// ```swift
+    /// [URLQueryItem(name: "search", value: "swift"),
+    ///  URLQueryItem(name: "limit", value: "20")]
+    /// // Results in: ?search=swift&limit=20
+    /// ```
     public let queryParameters: [URLQueryItem]
 
-    /// POST body string. Be sure and set the Content-Type header to specify what format it is in.
+    /// POST/PUT/PATCH body string.
+    ///
+    /// The string will be converted to UTF-8 data. Be sure and set the `Content-Type` header appropriately to specify what format it is in (e.g., "application/json").
+    ///
     public let body: String?
 
-    /// The special query parameter the web service expects for page size.
+    /// Query parameter specifying the page size for paginated requests.
+    ///
+    /// Different APIs use different parameter names (e.g., "limit", "per_page", "size").
+    ///
+    /// Example: `URLQueryItem(name: "limit", value: "50")`
+    ///
     public let pageSizeQueryItem: URLQueryItem?
 
-    /// The special query parameter the web service expects for starting offset.
+    /// A query parameter some web services expect, specifying the starting offset for paginated requests.
+    ///
+    /// Used for offset-based pagination (as opposed to page-number-based).
+    /// Mutually exclusive with ``pageQueryItem``.
+    ///
+    /// Example: `URLQueryItem(name: "offset", value: "100")`
+    ///
     public let offsetQueryItem: URLQueryItem?
 
-    /// The special query parameter the web service expects for starting page.
+    /// A query parameter some web services expect, specifying the page number for paginated requests.
+    ///
+    /// Used for page-number-based pagination (as opposed to offset-based).
+    /// Mutually exclusive with ``offsetQueryItem``.
+    ///
+    /// Example: `URLQueryItem(name: "page", value: "3")`
+    ///
     public let pageQueryItem: URLQueryItem?
 
-    /// The elapsed time before the last cached response is ignored and a fresh request is made.
+    /// The elapsed time in seconds before the last cached response is ignored and a fresh request is made.
+    ///
+    /// If a cached response exists and is newer than this interval, it will be returned instead of making a network request.
+    ///
+    /// Set to `nil` (default) to use standard cache policy.
+    ///
+    /// Example: `300` for 5 minutes of caching.
+    ///
     public let cacheInterval: TimeInterval?
 
-    /// The elapsed time to wait for a response before giving up.
+    /// The elapsed time in seconds to wait for a response before giving up.
+    ///
+    /// If the server doesn't respond within this time, the request fails with a timeout error.
+    ///
+    /// Set to `nil` (default) to use the URLSession's default timeout.
+    ///
+    /// Example: `60` for a 60-second timeout.
+    ///
     public let timeoutInterval: TimeInterval?
 
+    /// Creates a REST endpoint specification.
+    ///
+    /// - Parameters:
+    ///   - method: HTTP method to use. Defaults to `.get`.
+    ///   - path: Route path relative to the base URL.
+    ///   - headers: HTTP headers for the request. Defaults to an empty dictionary.
+    ///   - queryParameters: URL query parameters. Defaults to an empty array.
+    ///   - body: Request body string for POST/PUT/PATCH requests. Defaults to `nil`.
+    ///   - pageSizeQueryItem: Page size parameter for pagination. Defaults to `nil`.
+    ///   - offsetQueryItem: Starting offset parameter for pagination. Defaults to `nil`.
+    ///   - pageQueryItem: Page number parameter for pagination. Defaults to `nil`.
+    ///   - cacheInterval: Response cache duration in seconds. Defaults to `nil`.
+    ///   - timeoutInterval: Request timeout in seconds. Defaults to `nil`.
+    ///
     public init(method: RESTMethod = .get,
                 path: String,
                 headers: [String : String] = [:],
@@ -66,7 +141,9 @@ public struct RESTEndpoint: Sendable {
 
 extension RESTEndpoint: Equatable {}
 
-public extension RESTEndpoint {
+// Internal Helpers
+
+extension RESTEndpoint {
 
     var pageSize: UInt? {
         guard let pageSizeString = pageSizeQueryItem?.value else { return nil }

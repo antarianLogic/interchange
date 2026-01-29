@@ -11,13 +11,25 @@ import os
 import DateUtils
 
 /// The main RESTWebService object that handles web service requests for a given web service.
+///
+/// `RESTWebServiceManager` is an actor that provides REST API operations with support for pagination, rate limiting, caching, and more.
+///
+/// ## Overview
+///
+/// Create one instance per API base URL and reuse it throughout your application.
+/// The actor ensures thread-safe access to shared state like rate limiting counters.
+///
+/// See <doc:RESTWebService> and <doc:QuickStart> for more information.
+///
 public actor RESTWebServiceManager {
 
-    /// RESTWebServiceManager Initializer.
+    /// Creates a new manager instance for a specific API base URL.
+    ///
     /// - Parameters:
-    ///   - baseURL: Web service base URL. Includes everything in the URL that is common to all routes such as version path, etc. but not the method parts themselves. A slash at the end is not required.
-    ///   - session: Optional URLSession to be used for all service requests. If omitted, the shared URLSession will be used.
-    ///   - rateLimitHeaders: Optional specification of service request headers used for rate limiting. If omitted, rate limiting will not be performed. See <doc:RESTWebService#Rate-Limiting>.
+    ///   - baseURL: Web API base URL. Includes everything common to all routes (e.g., `https://api.example.com/v1`) but without the parts specific to each endpoint. A trailing slash is not required.
+    ///   - session: Optional URLSession to use for all requests. If omitted, `URLSession.shared` will be used. Provide a custom session for specialized configurations (authentication, certificates, custom caching, etc.).
+    ///   - rateLimitHeaders: Optional specification of API request headers used for rate limiting. If omitted, rate limiting will not be performed. See ``RESTRateLimitHeaders`` for configuration details. Also see See <doc:RESTWebService#Rate-Limiting-Support>.
+    ///
     public init(baseURL: URL,
                 session: URLSession = URLSession.shared,
                 rateLimitHeaders: RESTRateLimitHeaders? = nil) {
@@ -37,9 +49,31 @@ public actor RESTWebServiceManager {
 
 extension RESTWebServiceManager: RESTWebServiceManaging {
 
-    /// Performs web service request asynchronously.
-    /// - Parameter endpoint: Web service endpoint specification.
-    /// - Returns: Decoded model object.
+    /// Performs a web service request asynchronously.
+    ///
+    /// This method executes a REST API request and automatically decodes the JSON response into your specified model type.
+    ///
+    /// - Parameter endpoint: Web service endpoint specification describing the request (path, method, headers, query parameters, etc.).
+    /// - Returns: Decoded model object of type `M` conforming to `Decodable` and `Sendable`.
+    /// - Throws: ``RESTWebServiceError`` if the request fails, returns an HTTP error, or the response cannot be decoded.
+    ///
+    /// ## Behavior
+    ///
+    /// 1. Applies rate limiting if configured (waits if necessary)
+    /// 2. Builds the complete URL from base URL and endpoint
+    /// 3. Executes the HTTP request
+    /// 4. Validates HTTP status code (accepts 200-203)
+    /// 5. Decodes the JSON response
+    /// 6. Updates rate limit state from response headers
+    ///
+    /// ## HTTP Status Codes
+    ///
+    /// Only status codes 200-203 are considered successful. Any other code (including 204 No Content) throws ``RESTWebServiceError/httpError(_:_:_:)``.
+    ///
+    /// ## Concurrency
+    ///
+    /// This method respects Swift's task cancellation. If the task is cancelled, it throws a `CancellationError`.
+    ///
     public func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable & Sendable {
 
         await performRateLimiting()
@@ -83,11 +117,34 @@ extension RESTWebServiceManager: RESTWebServiceManaging {
         }
     }
 
-    /// Creates an AsyncThrowingStream that can be iterated on to perform multipage web service requests.
+    /// This method enables multipage web service requests by returning a stream that can be iterated on to yield each page of results until all data has been retrieved or an error occurs.
+    ///
     /// - Parameters:
-    ///   - initialEndpoint: Web service endpoint specification for initial page request. Subsequent page requests will used modified versions of this endpoint specification for each page.
-    ///   - safetyLimit: Optional page limit to protect against infinite loops during iteration or to simply limit the maximum number of pages to retrieve.
-    /// - Returns: AsyncThrowingStream to be iterated on.
+    ///   - initialEndpoint: Web service endpoint specification for the first page. Must include pagination parameters (``RESTEndpoint/pageSizeQueryItem`` and either ``RESTEndpoint/offsetQueryItem`` or ``RESTEndpoint/pageQueryItem``).
+    ///   - safetyLimit: Optional maximum number of pages to retrieve. Useful to prevent runaway pagination or when only a limited number or pages is required. If `nil`, continues until all pages are retrieved.
+    /// - Returns: `AsyncThrowingStream` that yields page objects of type `M`.
+    ///
+    ///   Iteration ends when all pages are retrieved or `safetyLimit` is reached.
+    ///
+    /// ## Requirements
+    ///
+    /// The response model type `M` must conform to ``Pageable``, which requires:
+    /// - `totalCount`: Total items across all pages
+    /// - `currentOffset`: Starting position of this page
+    /// - `submodels`: Array of items in this page
+    ///
+    /// ## Behavior
+    ///
+    /// 1. Makes initial request with provided endpoint
+    /// 2. Yields the first page
+    /// 3. Calculates next offset based on current progress
+    /// 4. Automatically constructs endpoint for next page
+    /// 5. Continues until `totalCount` is reached or `safetyLimit` is hit
+    ///
+    /// ## Error Handling
+    ///
+    /// If any page request fails, the stream throws an error and terminates:
+    ///
     nonisolated public func pageStream<M>(with initialEndpoint: RESTEndpoint,
                               safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
         let actor = PageStreamActor(wsManager: self, baseURLString: baseURL.absoluteString,
@@ -214,11 +271,26 @@ extension RESTWebServiceManager {
     }
 }
 
+/// Configuration for API rate limiting based on HTTP response headers.
+///
+/// Many REST APIs include rate limit information in response headers.
+/// This struct specifies which header names to look for so the manager
+/// can automatically throttle requests to stay within limits.
+///
 public struct RESTRateLimitHeaders: Sendable {
 
+    /// The HTTP header name containing the total rate limit (e.g., "X-RateLimit-Limit").
     public let rateLimitKey: String
+    
+    /// The HTTP header name containing the remaining requests allowed (e.g., "X-RateLimit-Remaining").
     public let rateLimitRemainingKey : String
 
+    /// Creates a rate limit header configuration.
+    ///
+    /// - Parameters:
+    ///   - rateLimitKey: Header name for the total rate limit.
+    ///   - rateLimitRemainingKey: Header name for remaining requests.
+    ///
     public init(rateLimitKey: String,
                 rateLimitRemainingKey: String) {
         self.rateLimitKey = rateLimitKey

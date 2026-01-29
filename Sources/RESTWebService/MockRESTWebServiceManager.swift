@@ -6,16 +6,32 @@
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
+/// An object conforming to RESTWebServiceManaging that can be injected in testing or preview code as a benign alternative to a real RESTWebServiceManager.
+///
+/// See <doc:RESTWebService#Testing> for more information.
+///
 public actor MockRESTWebServiceManager {
 
+    /// Creates a new mock RESTWebServiceManager.
+    ///
+    /// - Parameter shouldFail: Flag to allow simulation of request failures.
+    ///
     public init(shouldFail: Bool = false) {
         self.shouldFail = shouldFail
     }
 
+    /// Enables loading mock data to be returned from the requests.
+    ///
+    /// Call this with data in the reverse order that it should be returned by each request.
+    ///
+    /// - Parameter value: Some data to be returned by the next request.
+    ///
     public func pushMockData(_ value: Any) {
         mockData.append(value)
     }
 
+    /// Empty all the mock data loaded so far.
+    ///
     public func clearMockData() {
         mockData = []
     }
@@ -27,6 +43,20 @@ public actor MockRESTWebServiceManager {
 
 extension MockRESTWebServiceManager: RESTWebServiceManaging {
 
+    /// Simulates an asynchronous web API request by simply sleeping for a short time.
+    ///
+    /// - Parameter endpoint: Endpoint specification as required by `RESTWebServiceManaging`. It is ignored by this implementation. Pass any value.
+    /// - Returns: The data currently at the top of the stack that was pushed previously with ``pushMockData(_:)``.
+    /// - Throws: ``RESTWebServiceError``of value `.httpError` and code 404 if `shouldFail` is true.
+    ///
+    /// ## Preconditions
+    ///
+    /// The data stack associated with ``pushMockData(_:)`` must not be empty and the item currently at the top of the stack must be of the same type as `M`.
+    ///
+    /// ## Postconditions
+    ///
+    /// The data previously at the top of the stack associated with ``pushMockData(_:)`` will be popped off.
+    ///
     public func sendRequest<M>(with endpoint: RESTEndpoint) async throws -> M where M: Decodable & Sendable {
 
         try await Task.sleep(nanoseconds: 10)
@@ -40,6 +70,13 @@ extension MockRESTWebServiceManager: RESTWebServiceManaging {
         return model
     }
 
+    /// Simulates multipage web service requests by returning a stream that can be iterated on to yield each page of results until all data has been retrieved or `shouldFail` is true.
+    ///
+    /// - Parameters:
+    ///   - initialEndpoint: Endpoint specification as required by `RESTWebServiceManaging`. It is ignored by this implementation. Pass any value.
+    ///   - safetyLimit: Optional maximum number of pages to retrieve. If `nil`, continues until all pages are retrieved.
+    /// - Returns: `AsyncThrowingStream` that yields page objects of type `M`.
+    ///
     nonisolated public func pageStream<M>(with initialEndpoint: RESTEndpoint,
                               safetyLimit: UInt? = nil) -> AsyncThrowingStream<M,Error> where M: Decodable & Pageable & Sendable {
         let actor = PageStreamActor(wsManager: self, baseURLString: "",
