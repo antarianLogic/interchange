@@ -14,13 +14,11 @@ let package = Package(
             targets: ["Interchange"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0"),
-        .package(url: "https://github.com/antarianLogic/date-utils", from: "1.0.0")
+        .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0")
     ],
     targets: [
         .target(
-            name: "Interchange",
-            dependencies: [.product(name: "DateUtils", package: "date-utils")]
+            name: "Interchange"
         ),
         .testTarget(
             name: "InterchangeTests",

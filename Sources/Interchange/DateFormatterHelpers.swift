@@ -1,0 +1,20 @@
+//
+//  DateFormatterHelpers.swift
+//  interchange
+//
+//  Created by Carl Sheppard on 1/30/26.
+//  Copyright © 2026 Antarian Logic LLC. All rights reserved.
+//
+
+import Foundation
+
+extension DateFormatter {
+    static let rfc822DateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E, dd MMM yyyy HH:mm:ss zzz"
+        formatter.calendar = Calendar(identifier: .iso8601)
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+}
