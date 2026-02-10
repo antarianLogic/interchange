@@ -6,7 +6,7 @@
 //  Copyright © 2021 Antarian Logic LLC. All rights reserved.
 //
 
-/// An object conforming to InterchangeManaging that can be injected in testing or preview code as a benign alternative to a real InterchangeManager.
+/// A type conforming to InterchangeManaging that can be injected in testing or preview code as a benign alternative to a real InterchangeManager.
 ///
 /// See <doc:Interchange#Testing> for more information.
 ///

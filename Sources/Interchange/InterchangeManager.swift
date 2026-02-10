@@ -55,6 +55,8 @@ extension InterchangeManager: InterchangeManaging {
     /// - Parameter endpoint: Web service endpoint specification describing the request (path, method, headers, query parameters, etc.).
     /// - Returns: Decoded model object of type `M` conforming to `Decodable` and `Sendable`.
     /// - Throws: ``InterchangeError`` if the request fails, returns an HTTP error, or the response cannot be decoded.
+    /// - Throws: Some `URLSession` error if the underlying `data(for request:)` call failed.
+    /// - Throws: `CancellationError` if the task is cancelled.
     ///
     /// ## Behavior
     ///
@@ -154,7 +156,7 @@ extension InterchangeManager: InterchangeManaging {
 
 extension InterchangeManager {
 
-    func buildRequest(with endpoint: RESTEndpoint) throws -> URLRequest {
+    func buildRequest(with endpoint: RESTEndpoint) throws(InterchangeError) -> URLRequest {
 
         let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true)
         guard var validComponents = components else {

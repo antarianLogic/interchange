@@ -12,11 +12,25 @@ Add this package through Xcode. For more information see [Adding Package Depende
 
 ### Swift Packages
 
-Add this dependency line to your `Package.swift`:
+Add a package dependency for `interchange` to your `Package.swift`:
 
 ```swift
 dependencies: [
+    // ...
     .package(url: "https://github.com/antarianLogic/interchange", from: "1.0.0")
+]
+```
+
+And add the `Interchange` product to your target dependencies in `Package.swift` as well:
+
+```swift
+targets: [
+    .target(name: "YOUR_TARGET_NAME",
+            dependencies: [
+                // ...
+                .product(name: "Interchange", package: "interchange")
+            ]),
+    // ...
 ]
 ```
 

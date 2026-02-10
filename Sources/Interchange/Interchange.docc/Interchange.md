@@ -7,43 +7,67 @@ A lightweight Swift package for interacting concurrently with RESTful web APIs u
 A ``InterchangeManager`` uses [URLSession](https://developer.apple.com/documentation/foundation/urlsession) to make [Swift Concurrent](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency) requests to [RESTful](https://en.wikipedia.org/wiki/Representational_state_transfer) web APIs.
 
 A ``RESTEndpoint`` struct is used to define the specifications of specific endpoints.
-The individual `RESTEndpoint` structs would ideally be preconfigured with static convenience initializers defined elsewhere such as in a separate package.
+The individual `RESTEndpoint` structs would ideally be preconfigured with static convenience initializers defined elsewhere such as in a separate package (see <doc:Interchange#Ideal-Production-Usage>).
 
 The results are decoded asynchronously from the JSON response and returned.
 The specific [Decodable](https://developer.apple.com/documentation/swift/decodable) type to be output is specified by the caller as the concrete return type in ``InterchangeManager/sendRequest(with:)`` or ``InterchangeManager/pageStream(with:safetyLimit:)``.
 
-#### Quick Start Guide
+## Quick Start Guide
 
 To jump right in, see the <doc:QuickStart>.
 
-### Initialization
+## Initialization
 
 The client initializes one ``InterchangeManager`` per web service with a base URL using ``InterchangeManager/init(baseURL:session:rateLimitHeaders:)``.
 
-#### Example
+### Example
 
 ```swift
+import Interchange
+
 let url = URL(string: "https://example.com")!
-let wsManager = InterchangeManager(baseURL: url)
+let manager = InterchangeManager(baseURL: url)
 ```
 
 Also the `URLSession` can optionally be injected (see <doc:Interchange#URLSession-Injection>) and rate-limiting headers can be specified (see <doc:Interchange#Rate-Limiting-Support>).
 
-### One-shot Requests
+## Basic Requests
 
 For single-page requests, use ``InterchangeManager/sendRequest(with:)``, passing a endpoint specification of type ``RESTEndpoint`` and specifying the `Decodable` type to return.
 
-#### Example
+### Example
 
 ```swift
-let endpoint = FooEndpoints.getFoo(input: "123")
+let endpoint = RESTEndpoint(method: .get,
+                            path: "/cats/1")
+struct CatModel: Codable, Sendable {
+    let name: String
+    let age: Int
+}
 do {
-    let foo: SomeDecodable = try await wsManager.sendRequest(with: endpoint)
-    // foo now contains a fully decoded model object
+    let cat: CatModel = try await manager.sendRequest(with: endpoint)
+    print("cat name: \(cat.name)")
 } catch {
-    print("error: \(String(reflecting:error))")
+    print("Error: \(error)")
 }
 ```
+
+## Ideal Production Usage
+
+The usage intent with `Interchange` is to hide the implementation details of endpoint specifications and output types from the calling site.
+So for a clean calling implementation in your app, it is recommended to put the details of the specific endpoint specifications elsewhere in support code or even in a separate package from the main app.
+For example, a Swift enum could be created with various static methods, each returning a prepared `RESTEndpoint` from it's inputs.
+And all the `Codable` models could be defined in separate code as well, perhaps in the same package as the endpoints.
+Then all you would have to do at the calling site (where you actually make the network call) is make the request as above with one of the static endpoint methods, possibly taking any inputs that you pass to that static method.
+
+To go a step further, one could create a worker object that is initialized with the base URL and any other constants it needs such as client keys or whatever.
+This worker object would hold on to the `InterchangeManager`, ideally injected as a `InterchangeManaging` conforming type such as `MockInterchangeManager` so it can be mocked during testing.
+The worker would have async methods for all the endpoints it needs, each one returning an object of the expected concrete `Codable` type for that endpoint.
+The worker code could also be put in the same package as the endpoints and the models, since these are all related to the specific Web API in question.
+
+For an example of an entire package following these patterns with [endpoints](https://github.com/antarianLogic/spotify-web-api-interchange-kit/blob/main/Sources/SpotifyWebAPIInterchangeKit/API/SpotifyWebAPIRoutes.swift), [models](https://github.com/antarianLogic/spotify-web-api-interchange-kit/tree/main/Sources/SpotifyWebAPIInterchangeKit/API/Models), a [worker](https://github.com/antarianLogic/spotify-web-api-interchange-kit/blob/main/Sources/SpotifyWebAPIInterchangeKit/SpotifyWebAPIWorker.swift), and also including data presets and tests, see [SpotifyWebAPIInterchangeKit](https://github.com/antarianLogic/spotify-web-api-interchange-kit).
+
+## Features
 
 ### Multipage Requests
 
@@ -51,7 +75,7 @@ For endpoints that return multipage responses, ``InterchangeManager/pageStream(w
 An optional safety limit count can be passed to insure the iterator won't be infinite or if only a limited number of pages are desired.
 The `Decodable` type must also conform to ``Pageable``.
 
-#### Offset vs. Page Number
+### Offset vs. Page Number
 
 Interchange supports both offset-based and page-number-based pagination:
 
@@ -102,7 +126,7 @@ do {
 
 ### URLSession Injection
 
-`InterchangeManager` uses the shared `URLSession` by default but clients can optionally inject their own `URLSession` instead during initialization.
+`InterchangeManager` uses the [shared](https://developer.apple.com/documentation/foundation/urlsession/shared) `URLSession` by default but clients can optionally inject their own `URLSession` instead during initialization.
 See ``InterchangeManager/init(baseURL:session:rateLimitHeaders:)``.
 
 ### Rate Limiting Support
@@ -118,7 +142,7 @@ Enable and configure rate limiting by providing the header names your API uses:
 let rlHeaders = RESTRateLimitHeaders(rateLimitKey: "X-RateLimit-Limit",
                                      rateLimitRemainingKey: "X-RateLimit-Remaining")
 let manager = InterchangeManager(baseURL: url,
-                                    rateLimitHeaders: rlHeaders)
+                                 rateLimitHeaders: rlHeaders)
 ```
 
 #### How It Works
@@ -141,16 +165,17 @@ See ``InterchangeManager/init(baseURL:session:rateLimitHeaders:)``.
 
 ### Error Handling
 
-All errors thrown are of type ``InterchangeError`` enum.
-Some of the error enum cases contain the lower-level error in associated data.
-All cases have a `debugDescription` which is suitable for logging.
+* All errors thrown originating from this package will be of type ``InterchangeError``. All `InterchangeError` cases have a `debugDescription` which is suitable for logging.
+* Errors thrown by `JSONDecoder` during output decoding will be wrapped in a ``InterchangeError/decodingError(_:_:_:_:)`` with the request URL, reason string, and JSON coding path where the decoding failed also in the associated data.
+* Errors thrown by the underlying [URLSession](https://developer.apple.com/documentation/foundation/urlsession/data(for:)) call will simply be rethrown.
+* If the parent task is cancelled during any asyncrounous operations, a [CancellationError](https://developer.apple.com/documentation/swift/cancellationerror) will be thrown.
 
 ### Testing
 
 #### Mocking
 
 ``InterchangeManager`` conforms to ``InterchangeManaging`` and thus can be injected and mocked.
-In fact there already is a ``MockInterchangeManager`` for your convenience.
+A ``MockInterchangeManager`` already exists for your convenience.
 
 #### External Testing
 

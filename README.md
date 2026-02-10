@@ -34,6 +34,10 @@ To jump right in, see the [Quick Start Guide](Sources/Interchange/Interchange.do
 
 The full documentation is here: [Interchange](Sources/Interchange/Interchange.docc/Interchange.md).
 
+## Example Projects
+
+An example Swift package that uses `Interchange` to make Spotify Web API calls is [here](https://github.com/antarianLogic/spotify-web-api-interchange-kit).
+
 ## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
