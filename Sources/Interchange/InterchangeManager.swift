@@ -28,18 +28,22 @@ public actor InterchangeManager {
     ///   - baseURL: Web API base URL. Includes everything common to all routes (e.g., `https://api.example.com/v1`) but without the parts specific to each endpoint. A trailing slash is not required.
     ///   - session: Optional URLSession to use for all requests. If omitted, `URLSession.shared` will be used. Provide a custom session for specialized configurations (authentication, certificates, custom caching, etc.).
     ///   - rateLimitHeaders: Optional specification of API request headers used for rate limiting. If omitted, rate limiting will not be performed. See ``RESTRateLimitHeaders`` for configuration details. Also see See <doc:Interchange#Rate-Limiting-Support>.
+    ///   - decoder: Custom JSON decoder to use for decoding responses. Defaults to a standard `JSONDecoder()`. Provide a custom decoder if you need special date formatting, key decoding strategies, etc.
     ///
     public init(baseURL: URL,
                 session: URLSession = URLSession.shared,
-                rateLimitHeaders: RESTRateLimitHeaders? = nil) {
+                rateLimitHeaders: RESTRateLimitHeaders? = nil,
+                decoder: JSONDecoder = JSONDecoder()) {
         self.baseURL = baseURL
         self.session = session
         self.rateLimitHeaders = rateLimitHeaders
+        self.decoder = decoder
     }
 
     let baseURL: URL
     let session: URLSession
     let rateLimitHeaders: RESTRateLimitHeaders?
+    let decoder: JSONDecoder
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Interchange", category: "Package")
     var prevRequestTime: Date = .distantPast
     var rateLimit: UInt64 = 0
@@ -110,7 +114,7 @@ extension InterchangeManager: InterchangeManaging {
         }
 
         do {
-            return try JSONDecoder().decode(M.self, from: data)
+            return try decoder.decode(M.self, from: data)
         } catch let decodingError as DecodingError {
             let failingURL = request.url?.absoluteString ?? ""
             let error = buildErrorAndLog(decodingError: decodingError, urlString: failingURL)
