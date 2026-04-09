@@ -36,7 +36,8 @@ The full documentation is here: [Interchange](Sources/Interchange/Interchange.do
 
 ## Example Projects
 
-An example Swift package that uses `Interchange` to make Spotify Web API calls is [here](https://github.com/antarianLogic/spotify-web-api-interchange-kit).
+- [Spotify Web API Interchange Kit](https://github.com/antarianLogic/spotify-web-api-interchange-kit)
+- [TIDAL API Interchange Kit](https://github.com/antarianLogic/tidal-api-interchange-kit)
 
 ## Contributing
 

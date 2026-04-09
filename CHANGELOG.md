@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 TBD
 
 ### Changed
-- Documentation improvements including references to an example project, [SpotifyWebAPIInterchangeKit](https://github.com/antarianLogic/spotify-web-api-interchange-kit)
+- Documentation improvements including references to example projects
+- InterchangeError: now explicitly Sendable
+- InterchangeManager: initializer now accepts an optional injected JSONDecoder
 
 ### Deprecated
 TBD
