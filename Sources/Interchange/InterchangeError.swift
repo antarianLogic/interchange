@@ -14,7 +14,7 @@ import Foundation
 ///
 /// See <doc:Interchange#Error-Handling> in the main documentation and <doc:QuickStart#Error-Handling> in the Quick Start Guide for more information.
 ///
-public enum InterchangeError: Error {
+public enum InterchangeError: Error, Sendable {
 
     /// The endpoint specification is invalid or incomplete.
     ///
