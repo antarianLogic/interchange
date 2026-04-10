@@ -47,8 +47,14 @@ struct InterchangeManagerTests {
         do {
             let _: FooModel = try await sutInvalid.sendRequest(with: endpoint)
             Issue.record("sendRequest unexpectedly returned value")
+        } catch let error as InterchangeError {
+            if case let .httpError(statusCode, _, _) = error {
+                #expect(statusCode == 400)
+            } else {
+                Issue.record("Expected InterchangeError.httpError but got \(error)")
+            }
         } catch {
-            // error was thrown as expected
+            Issue.record("Expected InterchangeError but got \(error)")
         }
     }
 
