@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-TBD
+- CLAUDE.md: project notes for Claude Code
 
 ### Changed
 - Documentation improvements including references to example projects
