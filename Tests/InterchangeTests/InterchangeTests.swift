@@ -137,97 +137,27 @@ struct InterchangeManagerTests {
         await sutSubpath.performRateLimiting()
     }
 
-    @Test func pageStreamIterator() async throws {
-        let endpoint = FooBarEndpoints.getFoos()
+    // Tests both offset-based and page-based pagination styles across two pages.
+    @Test(arguments: [FooBarEndpoints.getFoos(), FooBarEndpoints.getFoos4()])
+    func pageStreamIteratorFetchesTwoPages(endpoint: RESTEndpoint) async throws {
         let stream: AsyncThrowingStream<FoosModel, Error> = sutBase.pageStream(with: endpoint, safetyLimit: 1000)
         var pageIterator = stream.makeAsyncIterator()
-        var page1: FoosModel!
-        do {
-            page1 = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
+        let page1 = try #require(try await pageIterator.next())
         #expect(page1 == FoosModel.Presets.foos1)
-        var page2: FoosModel!
-        do {
-            page2 = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
+        let page2 = try #require(try await pageIterator.next())
         #expect(page2 == FoosModel.Presets.foos2)
-        var pageNil: FoosModel?
-        do {
-            pageNil = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
-        #expect(pageNil == nil)
+        let page3 = try await pageIterator.next()
+        #expect(page3 == nil)
     }
 
-    @Test func pageStreamIteratorDoneFirstPass() async throws {
-        let endpoint = FooBarEndpoints.getFoos3()
+    // Tests both offset-based and page-based pagination styles when all results fit on the first page.
+    @Test(arguments: [FooBarEndpoints.getFoos3(), FooBarEndpoints.getFoos6()])
+    func pageStreamIteratorCompletesOnFirstPage(endpoint: RESTEndpoint) async throws {
         let stream: AsyncThrowingStream<FoosModel, Error> = sutBase.pageStream(with: endpoint, safetyLimit: 1000)
         var pageIterator = stream.makeAsyncIterator()
-        var page1: FoosModel!
-        do {
-            page1 = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
+        let page1 = try #require(try await pageIterator.next())
         #expect(page1 == FoosModel.Presets.foos3)
-        var pageNil: FoosModel?
-        do {
-            pageNil = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
-        #expect(pageNil == nil)
-    }
-
-    @Test func pageStreamIteratorWithPageQueryItem() async throws {
-        let endpoint = FooBarEndpoints.getFoos4()
-        let stream: AsyncThrowingStream<FoosModel, Error> = sutBase.pageStream(with: endpoint, safetyLimit: 1000)
-        var pageIterator = stream.makeAsyncIterator()
-        var page1: FoosModel!
-        do {
-            page1 = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
-        #expect(page1 == FoosModel.Presets.foos1)
-        var page2: FoosModel!
-        do {
-            page2 = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
-        #expect(page2 == FoosModel.Presets.foos2)
-        var pageNil: FoosModel?
-        do {
-            pageNil = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
-        #expect(pageNil == nil)
-    }
-
-    @Test func pageStreamIteratorWithPageQueryItemDoneFirstPass() async throws {
-        let endpoint = FooBarEndpoints.getFoos6()
-        let stream: AsyncThrowingStream<FoosModel, Error> = sutBase.pageStream(with: endpoint, safetyLimit: 1000)
-        var pageIterator = stream.makeAsyncIterator()
-        var page1: FoosModel!
-        do {
-            page1 = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
-        #expect(page1 == FoosModel.Presets.foos3)
-        var pageNil: FoosModel?
-        do {
-            pageNil = try await pageIterator.next()
-        } catch {
-            Issue.record("pageStream threw error")
-        }
-        #expect(pageNil == nil)
+        let page2 = try await pageIterator.next()
+        #expect(page2 == nil)
     }
 }
