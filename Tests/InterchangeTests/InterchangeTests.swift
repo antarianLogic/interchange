@@ -52,7 +52,7 @@ struct InterchangeManagerTests {
         }
     }
 
-    @Test func getWithRateLimiting() async throws {
+    @Test(.timeLimit(.minutes(1))) func getWithRateLimiting() async throws {
         let rateLimitHeaders = RESTRateLimitHeaders(rateLimitKey: "RateLimit",
                                                     rateLimitRemainingKey: "RateLimitRemaining")
         let sut = InterchangeManager(baseURL: URL.BaseURLPresets.subpath,
@@ -127,7 +127,7 @@ struct InterchangeManagerTests {
         #expect(request?.allHTTPHeaderFields == ["Accept": "application/xml"])
     }
 
-    @Test func performRateLimiting() async throws {
+    @Test(.timeLimit(.minutes(1))) func performRateLimiting() async throws {
         await sutSubpath.performRateLimiting()
     }
 
