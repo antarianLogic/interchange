@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation improvements including references to example projects
 - InterchangeError: now explicitly Sendable
 - InterchangeManager: initializer now accepts an optional injected JSONDecoder
+- InterchangeManagerTests: migrated to Swift Testing and added some testing improvements
 
 ### Deprecated
 TBD

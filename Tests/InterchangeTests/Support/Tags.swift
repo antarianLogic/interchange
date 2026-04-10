@@ -2,6 +2,9 @@
 //  Tags.swift
 //  InterchangeTests
 //
+//  Created by Carl Sheppard on 4/10/26.
+//  Copyright © 2026 Antarian Logic LLC. All rights reserved.
+//
 
 import Testing
 
