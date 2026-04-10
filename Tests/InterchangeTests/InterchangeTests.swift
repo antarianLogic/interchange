@@ -24,25 +24,25 @@ struct InterchangeManagerTests {
         sutInvalid = InterchangeManager(baseURL: URL.BaseURLPresets.invalid)
     }
 
-    @Test func getWithPathParams() async throws {
+    @Test(.tags(.networking)) func getWithPathParams() async throws {
         let endpoint = FooBarEndpoints.getFoo(input: "123")
         let model: FooModel = try await sutSubpath.sendRequest(with: endpoint)
         #expect(model == FooModel.Presets.foo)
     }
 
-    @Test func getWithQueryParams() async throws {
+    @Test(.tags(.networking)) func getWithQueryParams() async throws {
         let endpoint = FooBarEndpoints.getBar(inputs: ["234", "345"])
         let model: BarModel = try await sutBase.sendRequest(with: endpoint)
         #expect(model == BarModel.Presets.bar)
     }
 
-    @Test func putWithBodyParams() async throws {
+    @Test(.tags(.networking)) func putWithBodyParams() async throws {
         let endpoint = FooBarEndpoints.putFoo()
         let model: FooModel = try await sutBase.sendRequest(with: endpoint)
         #expect(model == FooModel.Presets.foo)
     }
 
-    @Test func httpError() async throws {
+    @Test(.tags(.networking)) func httpError() async throws {
         let endpoint = FooBarEndpoints.getFoo(input: "123")
         do {
             let _: FooModel = try await sutInvalid.sendRequest(with: endpoint)
@@ -58,7 +58,7 @@ struct InterchangeManagerTests {
         }
     }
 
-    @Test(.timeLimit(.minutes(1))) func getWithRateLimiting() async throws {
+    @Test(.tags(.networking, .timeLimited), .timeLimit(.minutes(1))) func getWithRateLimiting() async throws {
         let rateLimitHeaders = RESTRateLimitHeaders(rateLimitKey: "RateLimit",
                                                     rateLimitRemainingKey: "RateLimitRemaining")
         let sut = InterchangeManager(baseURL: URL.BaseURLPresets.subpath,
@@ -69,7 +69,7 @@ struct InterchangeManagerTests {
 
     // TODO: figure out how to test cacheInterval and timeoutInterval
 
-    @Test func getAllPages() async throws {
+    @Test(.tags(.networking, .pagination)) func getAllPages() async throws {
         let endpoint = FooBarEndpoints.getFoos()
         var models: [FoosModel] = []
         do {
@@ -84,7 +84,7 @@ struct InterchangeManagerTests {
         #expect(models.last == FoosModel.Presets.foos2)
     }
 
-    @Test func getAllPagesWithSafetyLimit() async throws {
+    @Test(.tags(.networking, .pagination)) func getAllPagesWithSafetyLimit() async throws {
         let endpoint = FooBarEndpoints.getFoos()
         var models: [FoosModel] = []
         do {
@@ -98,7 +98,7 @@ struct InterchangeManagerTests {
         #expect(models.first == FoosModel.Presets.foos1)
     }
 
-    @Test func buildRequestWithPathParams() async throws {
+    @Test(.tags(.requestBuilding)) func buildRequestWithPathParams() async throws {
         let endpoint = FooBarEndpoints.getFoo(input: "123")
         let request = try? await sutSubpath.buildRequest(with: endpoint)
         #expect(request?.url?.absoluteString == "https://example.com/subpath/foo/123")
@@ -106,7 +106,7 @@ struct InterchangeManagerTests {
         #expect(request?.allHTTPHeaderFields == ["Accept": "application/json"])
     }
 
-    @Test func buildRequestWithQueryParams() async throws {
+    @Test(.tags(.requestBuilding)) func buildRequestWithQueryParams() async throws {
         let endpoint = FooBarEndpoints.getBar(inputs: ["234", "345"])
         let request = try? await sutBase.buildRequest(with: endpoint)
         #expect(request?.url?.absoluteString == "https://example.com/bar?inputs=234,345")
@@ -115,7 +115,7 @@ struct InterchangeManagerTests {
                                                  "User-Agent": "Foo/1.0.0 (bar@example.com)"])
     }
 
-    @Test func buildRequestWithBodyParams() async throws {
+    @Test(.tags(.requestBuilding)) func buildRequestWithBodyParams() async throws {
         let endpoint = FooBarEndpoints.putFoo()
         let request = try? await sutBase.buildRequest(with: endpoint)
         #expect(request?.url?.absoluteString == "https://example.com/foo")
@@ -125,7 +125,7 @@ struct InterchangeManagerTests {
                                                  "Content-Type": "application/json; charset=utf-8"])
     }
 
-    @Test func buildRequestWithAcceptOverride() async throws {
+    @Test(.tags(.requestBuilding)) func buildRequestWithAcceptOverride() async throws {
         let endpoint = FooBarEndpoints.getFooXML(input: "456")
         let request = try? await sutSubpath.buildRequest(with: endpoint)
         #expect(request?.url?.absoluteString == "https://example.com/subpath/foo/456")
@@ -133,12 +133,12 @@ struct InterchangeManagerTests {
         #expect(request?.allHTTPHeaderFields == ["Accept": "application/xml"])
     }
 
-    @Test(.timeLimit(.minutes(1))) func performRateLimiting() async throws {
+    @Test(.tags(.networking, .timeLimited), .timeLimit(.minutes(1))) func performRateLimiting() async throws {
         await sutSubpath.performRateLimiting()
     }
 
     // Tests both offset-based and page-based pagination styles across two pages.
-    @Test(arguments: [FooBarEndpoints.getFoos(), FooBarEndpoints.getFoos4()])
+    @Test(.tags(.networking, .pagination), arguments: [FooBarEndpoints.getFoos(), FooBarEndpoints.getFoos4()])
     func pageStreamIteratorFetchesTwoPages(endpoint: RESTEndpoint) async throws {
         let stream: AsyncThrowingStream<FoosModel, Error> = sutBase.pageStream(with: endpoint, safetyLimit: 1000)
         var pageIterator = stream.makeAsyncIterator()
@@ -151,7 +151,7 @@ struct InterchangeManagerTests {
     }
 
     // Tests both offset-based and page-based pagination styles when all results fit on the first page.
-    @Test(arguments: [FooBarEndpoints.getFoos3(), FooBarEndpoints.getFoos6()])
+    @Test(.tags(.networking, .pagination), arguments: [FooBarEndpoints.getFoos3(), FooBarEndpoints.getFoos6()])
     func pageStreamIteratorCompletesOnFirstPage(endpoint: RESTEndpoint) async throws {
         let stream: AsyncThrowingStream<FoosModel, Error> = sutBase.pageStream(with: endpoint, safetyLimit: 1000)
         var pageIterator = stream.makeAsyncIterator()
