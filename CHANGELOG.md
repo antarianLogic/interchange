@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+TBD
+### Changed
+TBD
+### Deprecated
+TBD
+### Removed
+TBD
+### Fixed
+TBD
+### Security
+TBD
+
+## [1.0.5] - 2026-09-19
 
 ### Added
 - CLAUDE.md: project notes for Claude Code
@@ -15,18 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - InterchangeError: now explicitly Sendable
 - InterchangeManager: initializer now accepts an optional injected JSONDecoder
 - InterchangeManagerTests: migrated to Swift Testing and added some testing improvements
-
-### Deprecated
-TBD
-
-### Removed
-TBD
-
-### Fixed
-TBD
-
-### Security
-TBD
+- RESTEndpoint: made path optional to support pseudo-RESTful APIs that put the resource name in the query parameters
 
 ## [1.0.4] - 2026-01-30
 

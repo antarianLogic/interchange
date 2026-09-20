@@ -23,7 +23,7 @@ public struct RESTEndpoint: Sendable {
     ///
     /// Example: `/search` or `/users/123`
     ///
-    /// This is appended to the base URL configured in ``InterchangeManager``.
+    /// If not empty, this is appended to the base URL configured in ``InterchangeManager``.
     ///
     public let path: String
 
@@ -106,7 +106,7 @@ public struct RESTEndpoint: Sendable {
     ///
     /// - Parameters:
     ///   - method: HTTP method to use. Defaults to `.get`.
-    ///   - path: Route path relative to the base URL.
+    ///   - path: Route path relative to the base URL. Defaults to an empty string.
     ///   - headers: HTTP headers for the request. Defaults to an empty dictionary.
     ///   - queryParameters: URL query parameters. Defaults to an empty array.
     ///   - body: Request body string for POST/PUT/PATCH requests. Defaults to `nil`.
@@ -117,7 +117,7 @@ public struct RESTEndpoint: Sendable {
     ///   - timeoutInterval: Request timeout in seconds. Defaults to `nil`.
     ///
     public init(method: RESTMethod = .get,
-                path: String,
+                path: String = "",
                 headers: [String : String] = [:],
                 queryParameters: [URLQueryItem] = [],
                 body: String? = nil,

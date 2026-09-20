@@ -169,7 +169,9 @@ extension InterchangeManager {
             throw error
         }
 
-        validComponents.path = validComponents.path.appending(endpoint.path)
+        if !endpoint.path.isEmpty {
+            validComponents.path = validComponents.path.appending(endpoint.path)
+        }
 
         var queryItems = endpoint.queryParameters
         if let pageSizeQueryItem = endpoint.pageSizeQueryItem {
